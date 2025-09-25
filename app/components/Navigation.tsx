@@ -30,11 +30,11 @@ export default function Navigation({ layout = "list" }: NavigationProps) {
       {navItems.map((item, idx) => (
         <div
           key={idx}
-          className={layout === "list" ? "nav-list-wrapper flex-center-center" : "nav-grid-wrapper flex-center-center"}
+          className={layout === "list" ? "nav-list-wrapper flex-center-center no-flex-grow" : "nav-grid-wrapper flex-center-center"}
         >
           <Link href={item.href} className="no-link-styling flex-center-center flex-column">
             <div className="icon-bg" style={{backgroundImage: 'url(' + item.icon + ')'}}></div>
-            <h3 className="centered-text">{item.title}</h3>
+            <h3 style={{fontSize: '12px'}} className="centered-text">{item.title}</h3>
           </Link>
         </div>
       ))}

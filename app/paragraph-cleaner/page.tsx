@@ -1,120 +1,140 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
-export default function TextCleaner() {
-  const [input, setInput] = useState("");
+export default function RichTextCleaner() {
+  const editorRef = useRef<HTMLDivElement>(null);
   const [output, setOutput] = useState("");
-  const [retainBoldItalics, setRetainBoldItalics] = useState(true);
-  const [retainLineBreaks, setRetainLineBreaks] = useState(true);
+  const [copyStatus, setCopyStatus] = useState(false);
 
-  const cleanText = () => {
-    let cleaned = input;
+  const cleanHtml = () => {
+    if (!editorRef.current) return;
 
-    // Always collapse double spaces to single spaces
-    cleaned = cleaned.replace(/ {2,}/g, " ");
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(editorRef.current.innerHTML, "text/html");
 
-    // Handle bold/italics (assuming markdown-style **bold** and *italics*)
-    if (!retainBoldItalics) {
-      // Remove * and ** markers
-      cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, "$1"); // bold
-      cleaned = cleaned.replace(/\*(.*?)\*/g, "$1"); // italics
-      // Optional: also strip HTML <b>, <i>, <strong>, <em>
-      cleaned = cleaned.replace(/<\/?(b|i|strong|em)>/gi, "");
-    }
+    // 1. Remove <div> wrappers
+    doc.querySelectorAll("div").forEach((div) => {
+      const parent = div.parentNode;
+      while (div.firstChild) {
+        parent?.insertBefore(div.firstChild, div);
+      }
+      parent?.removeChild(div);
+    });
 
-    // Handle line breaks
-    if (!retainLineBreaks) {
-      cleaned = cleaned.replace(/\n+/g, " "); // collapse line breaks into spaces
-    }
+    // 2. Remove empty paragraphs
+    doc.querySelectorAll("p").forEach((p) => {
+      if (!p.textContent || p.textContent.trim() === "" || p.innerHTML.match(/^(&nbsp;|\s)*$/)) {
+        p.remove();
+      }
+    });
 
-    setOutput(cleaned);
+    // 3. Handle <p><strong>Heading</strong><br> case
+    doc.querySelectorAll("p").forEach((p) => {
+      const html = p.innerHTML.trim();
+      if (html.match(/^<strong>.*<\/strong><br>/i)) {
+        const container = document.createElement("div");
+
+        // Extract heading
+        const headingHtml = html.replace(/<br>[\s\S]*/i, "");
+        const paraHtml = html.replace(/^<strong>.*<\/strong><br>/i, "").trim();
+
+        if (headingHtml) {
+          const newHeadingP = document.createElement("p");
+          newHeadingP.innerHTML = headingHtml;
+          container.appendChild(newHeadingP);
+        }
+
+        if (paraHtml) {
+          const newParaP = document.createElement("p");
+          newParaP.innerHTML = paraHtml;
+          container.appendChild(newParaP);
+        }
+
+        p.replaceWith(...container.childNodes);
+      }
+    });
+
+    let html = doc.body.innerHTML;
+
+    // 4. Replace &nbsp; with spaces
+    html = html.replace(/&nbsp;/g, " ");
+
+    // 5. Normalize spaces
+    html = html.replace(/\s+/g, " "); // collapse multiple spaces
+    html = html.replace(/>\s+</g, "><"); // no spaces between tags
+    html = html.replace(/<p>\s+/g, "<p>"); // trim leading spaces in <p>
+    html = html.replace(/\s+<\/p>/g, "</p>"); // trim trailing spaces in </p>
+
+    setOutput(html.trim());
   };
 
-  const copyText = () => {
-    if (output) {
-      navigator.clipboard.writeText(output).then(() => {
-        alert("Cleaned text copied to clipboard!");
-      });
+  const clearText = () => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = "";
     }
+    setOutput("");
   };
+
+const copyToClipboard = () => {
+  if (output) {
+    const blob = new Blob([output], { type: "text/html" });
+    const data = [new ClipboardItem({ "text/html": blob, "text/plain": new Blob([output], { type: "text/plain" }) })];
+
+    navigator.clipboard.write(data).then(() => {
+      setCopyStatus(true);
+      setTimeout(() => setCopyStatus(false), 2000); // revert after 2s
+    });
+  }
+};
 
   return (
     <div style={{ fontFamily: "Arial, sans-serif", padding: "20px" }}>
-      <h2>Text Cleaner</h2>
-
-      <label htmlFor="inputText">Paste your text here:</label>
-      <textarea
-        id="inputText"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="Paste text..."
-        style={{
-          width: "100%",
-          height: "120px",
-          margin: "10px 0",
-          padding: "10px",
-          fontSize: "14px",
-        }}
-      />
-
-      {/* Checkboxes */}
-      <div style={{ margin: "10px 0" }}>
-        <label style={{ marginRight: "20px" }}>
-          <input
-            type="checkbox"
-            checked={retainBoldItalics}
-            onChange={(e) => setRetainBoldItalics(e.target.checked)}
-          />{" "}
-          Retain bold / italics
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={retainLineBreaks}
-            onChange={(e) => setRetainLineBreaks(e.target.checked)}
-          />{" "}
-          Retain line breaks
-        </label>
+      <div className="flex-center-spacebetween">
+        <h2>Rich Text Cleaner</h2>
+        <div className="flex-center-end">
+          <button onClick={clearText}>Clear Text</button>
+        </div>
       </div>
 
-      <button
-        onClick={cleanText}
-        style={{
-          margin: "5px 0",
-          padding: "10px 20px",
-          fontSize: "14px",
-          cursor: "pointer",
-        }}
-      >
-        Clean Text
-      </button>
+      <div className="flex-start-start">
+        <div
+          className="flex-start-start flex-column"
+          style={{ maxWidth: "45vw", marginRight: "2.5vw" }}
+        >
+          <div className="flex-center-spacebetween full-width">
+            <p>
+              <strong>Copy text here</strong>
+            </p>
+            <button onClick={cleanHtml}>Clean Rich Text</button>
+          </div>
 
-      <label htmlFor="outputText">Cleaned text:</label>
-      <textarea
-        id="outputText"
-        value={output}
-        readOnly
-        style={{
-          width: "100%",
-          height: "120px",
-          margin: "10px 0",
-          padding: "10px",
-          fontSize: "14px",
-        }}
-      />
+          <div className="rich-text-box" ref={editorRef} contentEditable></div>
+        </div>
 
-      <button
-        onClick={copyText}
-        style={{
-          margin: "5px 0",
-          padding: "10px 20px",
-          fontSize: "14px",
-          cursor: "pointer",
-        }}
-      >
-        Copy Cleaned Text
-      </button>
+        {output && (
+          <div>
+            <div className="flex-center-spacebetween full-width">
+              <p>
+                <strong>Cleaned Text</strong>
+              </p>
+              <button
+                onClick={copyToClipboard}
+                style={{
+                  backgroundColor: copyStatus ? "green" : "",
+                  color: copyStatus ? "white" : "",
+                }}
+              >
+                {copyStatus ? "Text copied to clipboard" : "Copy Cleaned Text"}
+              </button>
+            </div>
+            <div
+              className="rich-text-box"
+              dangerouslySetInnerHTML={{ __html: output }}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -56,11 +56,14 @@ h2 {
 
 .active-link {text-decoration: underline;}
 
-.nav-list-wrapper {border: 2px solid blue; max-width: 150px; aspect-ratio: 1; padding: 15px;}
+.nav-list-wrapper {border: 2px solid blue; padding: 15px;}
 .nav-grid-wrapper {border: 2px solid lime; width: 200px; aspect-ratio: 1; padding: 25px; border-radius: 5px;}
 .icon-bg { border: 1px solid blue; background-position: center; background-size: contain; background-repeat: no-repeat;}
 .nav-list-wrapper .icon-bg {width: 50px; height: 50px;}
 
+.rich-text-box {min-height: 200px; border: 1px solid #ccc; padding: 10px; width: 45vw;}
+
+button {padding: 10px 20px; margin: 5px; cursor: pointer;}
 
 @media screen and (min-width: 480px) {
   body {
