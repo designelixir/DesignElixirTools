@@ -12,6 +12,7 @@ export interface NavItem {
 const navItems: NavItem[] = [
   { title: "CSS Formatter", href: "/css-formatter", icon: "/css.png" },
   { title: "Paragraph Cleaner", href: "/paragraph-cleaner", icon: "/paragraph.svg" },
+  { title: "QR Code Generator", href: "/qr-code-generator", icon: "/qr-code.svg"}
 ];
 
 interface NavigationProps {
