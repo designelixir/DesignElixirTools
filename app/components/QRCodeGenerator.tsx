@@ -1,10 +1,14 @@
 import { useState } from 'react';
+import { createClient } from '@/utils/supabase/client';
 
 export default function QRCodeGenerator2() {
-  const [url, setUrl] = useState('');
-const [qrData, setQrData] = useState<string | null>(null);
+  const [url, setUrl] = useState<string>('');
+  const [qrData, setQrData] = useState<string | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState<boolean>(false);
+  const [qrName, setQrName] = useState<string>('');
+  const [saving, setSaving] = useState<boolean>(false);
 
-  const generateQR = () => {
+  const generateQR = (): void => {
     if (!url.trim()) {
       alert('Please enter a URL');
       return;
@@ -14,7 +18,7 @@ const [qrData, setQrData] = useState<string | null>(null);
     setQrData(qrUrl);
   };
 
-  const downloadPNG = () => {
+  const downloadPNG = (): void => {
     if (!qrData) return;
     
     const link = document.createElement('a');
@@ -25,7 +29,7 @@ const [qrData, setQrData] = useState<string | null>(null);
     document.body.removeChild(link);
   };
 
-  const downloadSVG = () => {
+  const downloadSVG = (): void => {
     if (!qrData) return;
     
     const svgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&format=svg&data=${encodeURIComponent(url)}`;
@@ -45,6 +49,57 @@ const [qrData, setQrData] = useState<string | null>(null);
       });
   };
 
+  const handleSaveClick = (): void => {
+    setShowSaveDialog(true);
+    setQrName('');
+  };
+
+  const saveToSupabase = async (): Promise<void> => {
+    if (!qrName.trim()) {
+      alert('Please enter a name for this QR code');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      // Fetch the SVG data
+      const svgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&format=svg&data=${encodeURIComponent(url)}`;
+      const response = await fetch(svgUrl);
+      const svgContent = await response.text();
+
+      // Create Supabase client and insert data
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('qr-codes')
+        .insert([
+          {
+            'qr-name': qrName,
+            'qr-link': url,
+            'qr-svg-data': svgContent
+          }
+        ]);
+
+      if (error) {
+        console.error('Supabase error details:', error);
+        console.error('Error message:', error.message);
+        console.error('Error code:', error.code);
+        throw error;
+      }
+
+      console.log('Successfully saved:', data);
+
+      alert('QR code saved successfully!');
+      setShowSaveDialog(false);
+      setQrName('');
+    } catch (error) {
+      console.error('Error saving to Supabase:', error);
+      alert('Failed to save QR code. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
       <h1>QR Code Generator</h1>
@@ -56,7 +111,7 @@ const [qrData, setQrData] = useState<string | null>(null);
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://example.com"
-          style={{ width: '100%', padding: '8px', fontSize: '16px' }}
+          style={{ width: '100%', padding: '8px', fontSize: '16px', boxSizing: 'border-box' }}
           onKeyPress={(e) => e.key === 'Enter' && generateQR()}
         />
       </div>
@@ -78,19 +133,95 @@ const [qrData, setQrData] = useState<string | null>(null);
             />
           </div>
 
-          <button
-            onClick={downloadPNG}
-            style={{ padding: '10px 20px', marginRight: '10px', cursor: 'pointer' }}
-          >
-            Download PNG
-          </button>
-          
-          <button
-            onClick={downloadSVG}
-            style={{ padding: '10px 20px', cursor: 'pointer' }}
-          >
-            Download SVG
-          </button>
+          <div style={{ marginBottom: '20px' }}>
+            <button
+              onClick={downloadPNG}
+              style={{ padding: '10px 20px', marginRight: '10px', cursor: 'pointer' }}
+            >
+              Download PNG
+            </button>
+            
+            <button
+              onClick={downloadSVG}
+              style={{ padding: '10px 20px', marginRight: '10px', cursor: 'pointer' }}
+            >
+              Download SVG
+            </button>
+
+            <button
+              onClick={handleSaveClick}
+              style={{ 
+                padding: '10px 20px', 
+                cursor: 'pointer',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px'
+              }}
+            >
+              Save to Database
+            </button>
+          </div>
+
+          {showSaveDialog && (
+            <div style={{ 
+              border: '2px solid #4CAF50', 
+              padding: '20px', 
+              borderRadius: '8px',
+              backgroundColor: '#f9f9f9',
+              marginTop: '20px'
+            }}>
+              <h3 style={{ marginTop: 0 }}>Save QR Code</h3>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '8px' }}>Name:</label>
+                <input
+                  type="text"
+                  value={qrName}
+                  onChange={(e) => setQrName(e.target.value)}
+                  placeholder="My QR Code"
+                  style={{ 
+                    width: '100%', 
+                    padding: '8px', 
+                    fontSize: '16px',
+                    boxSizing: 'border-box'
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && saveToSupabase()}
+                />
+              </div>
+              <div>
+                <button
+                  onClick={saveToSupabase}
+                  disabled={saving}
+                  style={{ 
+                    padding: '10px 20px', 
+                    marginRight: '10px',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    backgroundColor: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    opacity: saving ? 0.6 : 1
+                  }}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => setShowSaveDialog(false)}
+                  disabled={saving}
+                  style={{ 
+                    padding: '10px 20px',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    backgroundColor: '#f44336',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
