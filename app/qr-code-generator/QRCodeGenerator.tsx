@@ -101,8 +101,7 @@ export default function QRCodeGenerator2() {
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1>QR Code Generator</h1>
+    <div className="flex-start-start flex-column">
       
       <div style={{ marginBottom: '20px' }}>
         <label style={{ display: 'block', marginBottom: '8px' }}>Enter URL:</label>

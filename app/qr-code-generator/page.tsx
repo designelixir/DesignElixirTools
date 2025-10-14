@@ -1,5 +1,5 @@
 "use client"
-import QRCodeGenerator2 from "../components/QRCodeGenerator"
+import QRCodeGenerator2 from "./QRCodeGenerator"
 
 export default function QRCodeGenerator(){
     return(

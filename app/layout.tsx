@@ -1,6 +1,8 @@
+
 import type { Metadata } from "next";
 import "./globals.css";
 import Navigation from "./components/Navigation"; // adjust path if needed
+import { TrackingProvider } from "./context/TrackingContext";
 
 export const metadata: Metadata = {
   title: "Design Elixir Tools",
@@ -15,8 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <TrackingProvider>
         <Navigation layout="list" /> 
         <main>{children}</main>      
+        </TrackingProvider>
       </body>
     </html>
   );

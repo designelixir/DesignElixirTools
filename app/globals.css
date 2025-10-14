@@ -1,11 +1,19 @@
 * {box-sizing: border-box;}
-html {max-width: 100vw; overflow-x: hidden; }
-body {width: 100%; margin: 0px}
-
 :root {
-    --gold: #FADD60;
-    --font: 'Arial', sans-serif;
+  --br: 8px;
+  --red: #E23F24;
+  --orange: #FF9933;
+  --yellow: #FFCC33;
+  --teal: #236666;
+  --navy: #333399;
+  --blue: #3366CC;
+  --lavender: #8EA1E4;
 }
+
+html {max-width: 100vw; overflow-x: hidden; background-image: url('/burst.png'); background-origin: center bottom; background-size: cover; background-repeat: no-repeat; background-color: var(--navy); max-height: 100vh; padding: 1.5vh 1.5vw; }
+body {width: 100%; margin: 0px; max-height: 97vh;}
+main {width: 100%; margin: 0px; overflow-y: scroll; background: rgba(255,255,255,0.85); height: 100%; padding: 1.5vh 1.5vw; border-radius: var(--br);}
+
 
 .flex-center-center {display: flex; align-items: center; justify-content: center; flex:1}
 .flex-center-end {display: flex; align-items: center; justify-content: flex-end; flex:1}
@@ -56,10 +64,11 @@ h2 {
 
 .active-link {text-decoration: underline;}
 
-.nav-list-wrapper {border: 2px solid blue; padding: 15px;}
-.nav-grid-wrapper {border: 2px solid lime; width: 200px; aspect-ratio: 1; padding: 25px; border-radius: 5px;}
-.icon-bg { border: 1px solid blue; background-position: center; background-size: contain; background-repeat: no-repeat;}
+.nav-list-wrapper {align-items: stretch;}
+.nav-grid-wrapper {border: 2px solid lime; width: 200px; aspect-ratio: 1; padding: 25px; border-radius: 5px; }
+.icon-bg {margin-bottom: 15px; background-position: center; background-size: contain; background-repeat: no-repeat;}
 .nav-list-wrapper .icon-bg {width: 50px; height: 50px;}
+.list-link {background: rgba(255,255,255,0.75); padding: 10px; margin: 0 5px 5px; width: 100px;}
 
 .rich-text-box {min-height: 200px; border: 1px solid #ccc; padding: 10px; width: 45vw;}
 
