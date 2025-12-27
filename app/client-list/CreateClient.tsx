@@ -1,43 +1,64 @@
-import { useState, FormEvent, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import ColorSelector from '../components/ColorSelector';
-import { getRandomColor } from '../components/ColorSelector';
+'use client';
+
+import { useState, FormEvent } from 'react';
+import { createClient as createSupabaseClient } from '@/utils/supabase/client';
+import CreateProject from '../projects/CreateProject';
+import Image from 'next/image';
 
 interface CreateClientProps {
   onClientCreated: () => void;
   onClose: () => void;
 }
 
+type TabType = 'info' | 'projects';
+
 export default function CreateClient({ onClientCreated, onClose }: CreateClientProps) {
+  const [activeTab, setActiveTab] = useState<TabType>('info');
   const [formData, setFormData] = useState({
     client_first: '',
     client_last: '',
     client_email: '',
     client_phone: '',
-    client_company: '',
-    client_color: '',
-    client_image: null as File | null,
+    client_projects: [] as string[],
+    client_notes: '',
+    client_billable_rate: '' as string | number,
+    client_drive: '',
+    client_github: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [projects, setProjects] = useState<any[]>([]);
 
-  useEffect(() => {
-    // Pick a random color on mount
-    setFormData(prev => ({ ...prev, client_color: getRandomColor() }));
-  }, []);
+  const handleProjectCreated = async (projectId: string) => {
+    setFormData({
+      ...formData,
+      client_projects: [...formData.client_projects, projectId]
+    });
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData({ ...formData, client_image: file });
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const supabase = createSupabaseClient();
+    const { data } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single();
+
+    if (data) {
+      setProjects([...projects, data]);
     }
+  };
+
+  const handleRemoveProject = async (projectId: string) => {
+    const supabase = createSupabaseClient();
+    await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
+
+    setFormData({
+      ...formData,
+      client_projects: formData.client_projects.filter(id => id !== projectId)
+    });
+    setProjects(projects.filter(p => p.id !== projectId));
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -46,42 +67,38 @@ export default function CreateClient({ onClientCreated, onClose }: CreateClientP
     setError('');
 
     try {
-      const supabase = createClient();
-      let imageUrl = '';
+      const supabase = createSupabaseClient();
 
-      if (formData.client_image) {
-        const fileExt = formData.client_image.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('client-images')
-          .upload(fileName, formData.client_image);
-
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('client-images')
-          .getPublicUrl(fileName);
-        
-        imageUrl = publicUrl;
-      }
-
-      const { error: insertError } = await supabase
+      const { data: clientData, error: insertError } = await supabase
         .from('clients')
         .insert([{
           client_first: formData.client_first,
           client_last: formData.client_last,
           client_email: formData.client_email,
-          client_phone: formData.client_phone,
-          client_company: formData.client_company,
-          client_color: formData.client_color,
-          client_image: imageUrl || null,
-        }]);
+          client_phone: formData.client_phone || null,
+          client_projects: JSON.stringify(formData.client_projects),
+          client_notes: formData.client_notes || null,
+          client_billable_rate: formData.client_billable_rate ? Number(formData.client_billable_rate) : null,
+          client_drive: formData.client_drive || null,
+          client_github: formData.client_github || null,
+        }])
+        .select()
+        .single();
 
       if (insertError) {
         throw insertError;
+      }
+
+      // Update all created projects with the client_id
+      if (formData.client_projects.length > 0) {
+        const { error: updateError } = await supabase
+          .from('projects')
+          .update({ client_id: clientData.id })
+          .in('id', formData.client_projects);
+
+        if (updateError) {
+          console.error('Error updating projects with client_id:', updateError);
+        }
       }
 
       setLoading(false);
@@ -95,102 +112,131 @@ export default function CreateClient({ onClientCreated, onClose }: CreateClientP
 
   return (
     <div>
-      <div>
+      <div className="flex-center-spacebetween">
         <h2>Add New Client</h2>
         <button type="button" onClick={onClose}>✕</button>
       </div>
 
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #e0e0e0' }}>
+        <button type="button" onClick={() => setActiveTab('info')} className={activeTab === 'info' ? 'tab-button tab-button-active' : 'tab-button'} >
+          Client Info
+        </button>
+        <button type="button" onClick={() => setActiveTab('projects')} className={activeTab === 'projects' ? 'tab-button tab-button-active' : 'tab-button'} >
+          Projects ({formData.client_projects.length})
+        </button>
+      </div>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', alignItems: 'center' }}>
-          <ColorSelector
-            selectedColor={formData.client_color}
-            onColorChange={(color) => setFormData({ ...formData, client_color: color })}
-          />
-
+        {activeTab === 'info' && (
           <div>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Client Image
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              style={{ marginBottom: '10px' }}
-            />
-            {imagePreview && (
-              <img
-                src={imagePreview}
-                alt="Preview"
-                style={{
-                  width: '60px',
-                  height: '60px',
-                  objectFit: 'cover',
-                  borderRadius: '8px',
-                  border: '2px solid #ddd',
-                }}
+            <div className='flex-start-start'>
+              <div className="flex-start-start flex-column form-input-wrapper">
+                <label>First Name *</label>
+                <input type="text" required value={formData.client_first} onChange={(e) => setFormData({ ...formData, client_first: e.target.value })} />
+              </div>
+              <div className="flex-start-start flex-column form-input-wrapper">
+                <label>Last Name *</label>
+                <input type="text" required value={formData.client_last} onChange={(e) => setFormData({ ...formData, client_last: e.target.value })} />
+              </div>
+            </div>
+
+            <div className="flex-start-start">
+              <div className="flex-start-start flex-column form-input-wrapper">
+                <label>Email *</label>
+                <input type="email" required value={formData.client_email} onChange={(e) => setFormData({ ...formData, client_email: e.target.value })} />
+              </div>
+
+              <div className='flex-start-start flex-column form-input-wrapper' style={{maxWidth: '30%'}}>
+                <label>Phone</label>
+                <input type="tel" value={formData.client_phone} onChange={(e) => setFormData({ ...formData, client_phone: e.target.value })} />
+              </div>
+            </div>
+
+            <div className="flex-start-start flex-column" style={{margin: '10px'}}>
+              <label>Billable Rate ($/hr)</label>
+              <input type="number" step="0.01" value={formData.client_billable_rate} onChange={(e) => setFormData({ ...formData, client_billable_rate: e.target.value })} placeholder="e.g., 150" />
+            </div>
+
+            <div className="flex-start-start flex-column form-input-wrapper">
+              <label>Google Drive Link</label>
+              <input 
+                type="url" 
+                value={formData.client_drive} 
+                onChange={(e) => setFormData({ ...formData, client_drive: e.target.value })} 
+                placeholder="https://drive.google.com/..."
               />
-            )}
+            </div>
+
+            <div className="flex-start-start flex-column form-input-wrapper">
+              <label>GitHub Link</label>
+              <input 
+                type="url" 
+                value={formData.client_github} 
+                onChange={(e) => setFormData({ ...formData, client_github: e.target.value })} 
+                placeholder="https://github.com/..."
+              />
+            </div>
+
+            <div className="flex-start-start flex-column form-input-wrapper full-width">
+              <label>Notes</label>
+              <textarea 
+                value={formData.client_notes} 
+                onChange={(e) => setFormData({ ...formData, client_notes: e.target.value })} 
+                placeholder="Additional notes about this client..."
+                rows={4}
+                className="full-width"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        <div>
-          <label>First Name *</label>
-          <input
-            type="text"
-            required
-            value={formData.client_first}
-            onChange={(e) => setFormData({ ...formData, client_first: e.target.value })}
-          />
-        </div>
+        {activeTab === 'projects' && (
+          <div>
 
-        <div>
-          <label>Last Name *</label>
-          <input
-            type="text"
-            required
-            value={formData.client_last}
-            onChange={(e) => setFormData({ ...formData, client_last: e.target.value })}
-          />
-        </div>
+            {projects.length > 0 && (
+              <div style={{ marginTop: '20px' }}>
+                <h3>Created Projects</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {projects.map((project) => (
+                    <div key={project.id} className='card flex-center-spacebetween' >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div className='circle' style={{ backgroundColor: project.color }} />
+                        <div>
+                          <p><strong>{project.project_name}</strong> </p>
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            {project.hourly_rate ? `$${project.hourly_rate}/hr` : 'No rate set'} 
+                            {project.deadline && ` • Deadline: ${new Date(project.deadline).toLocaleDateString()}`}
+                            {!project.active && ' • Inactive'}
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveProject(project.id)} 
+                        className='icon-button'
+                      >
+                        <Image src="/trash.svg" alt="trash icon" width={15} height={15} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <CreateProject 
+              clientFirst={formData.client_first}
+              clientLast={formData.client_last}
+              onProjectCreated={handleProjectCreated}
+            />
 
-        <div>
-          <label>Email *</label>
-          <input
-            type="email"
-            required
-            value={formData.client_email}
-            onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
-          />
-        </div>
+            
+          </div>
+        )}
 
-        <div>
-          <label>Phone</label>
-          <input
-            type="tel"
-            value={formData.client_phone}
-            onChange={(e) => setFormData({ ...formData, client_phone: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label>Company Name</label>
-          <input
-            type="text"
-            value={formData.client_company}
-            onChange={(e) => setFormData({ ...formData, client_company: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <button type="button" onClick={onClose} disabled={loading}>
-            Cancel
-          </button>
-          <button type="submit" disabled={loading}>
-            {loading ? 'Creating...' : 'Create Client'}
-          </button>
-        </div>
+        {error && <div style={{ color: 'red', marginTop: '15px' }}>{error}</div>}
+        
+        <button type="submit" disabled={loading} style={{ marginTop: '20px' }}>
+          {loading ? 'Creating...' : 'Create Client'}
+        </button>
       </form>
     </div>
   );

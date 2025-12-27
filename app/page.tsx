@@ -1,10 +1,11 @@
 import Navigation from "./components/Navigation";
+import Tasks from "./projects/Tasks";
 
 
 export default function Home() {
   return (
-    <main className="flex-center-center" style={{height: 'calc(100vh - 150px)'}}>
-      <h1>Select a tool.</h1>
-    </main>
+    <div className="flex-center-center full-width basic-padding">
+      <Tasks tableTitle="All Tasks"></Tasks>
+    </div>
   );
 }

@@ -1,8 +1,8 @@
-'use client'; // if using app directory
+'use client';
 
 import { useState } from 'react';
-import TimeTrackerBar from './TimeTrackerBar';
 import TimeTrackedList from './TimeTrackedList';
+import AddTimeCSV from '../projects/AddTimeCSV';
 
 export default function TimeTrackingPage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -12,12 +12,12 @@ export default function TimeTrackingPage() {
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className='flex-start-start flex-column basic-padding'>
       <h1>Time Tracking</h1>
       
-      <TimeTrackerBar onEntrySaved={handleEntrySaved} />
-      
-      <TimeTrackedList key={refreshKey} />
+
+      <AddTimeCSV />
+      <TimeTrackedList defaultView="week" />
     </div>
   );
 }

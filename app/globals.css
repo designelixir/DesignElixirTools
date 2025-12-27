@@ -1,6 +1,6 @@
-* {box-sizing: border-box;}
+* {box-sizing: border-box; font-family: 'Greycliff-CF', sans-serif}
 :root {
-  --br: 8px;
+  --br: 5px;
   --red: #E23F24;
   --orange: #FF9933;
   --yellow: #FFCC33;
@@ -8,12 +8,27 @@
   --navy: #333399;
   --blue: #3366CC;
   --lavender: #8EA1E4;
+  --opaque-white: rgba(255,255,255,0.85);
+  --basic-padding: clamp(15px, 2.5vw, 25px);
+  --box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --white-1: #f3f3f3;
+  --white-2: #E7E8E8;
+  --white-3: #CCCCCC;
+  --white-4: #B3B4B4;
+
+  --greycliff: 'Greycliff-CF', sans-serif;
 }
 
-html {max-width: 100vw; overflow-x: hidden; background-image: url('/burst.png'); background-origin: center bottom; background-size: cover; background-repeat: no-repeat; background-color: var(--navy); max-height: 100vh; padding: 1.5vh 1.5vw; }
-body {width: 100%; margin: 0px; max-height: 97vh;}
-main {width: 100%; margin: 0px; overflow-y: scroll; background: rgba(255,255,255,0.85); height: 100%; padding: 1.5vh 1.5vw; border-radius: var(--br);}
+html {max-width: 100vw; overflow-x: hidden; background-image: url('/burst.png'); background-origin: center bottom; background-size: cover; background-repeat: no-repeat; background-color: var(--navy); max-height: 100vh; padding: 10px; }
+body {width: 100%; margin: 0px; max-height: 100vh; height: calc(100vh - 20px); }
+main {width: 100%; margin: 0px; overflow-y: scroll;  height: calc(100vh - 22px);  border-radius: var(--br);}
+section {background: var(--opaque-white);   border-radius: var(--br);}
 
+@media screen and (max-width: 850px) {
+  body {flex-direction: column; }
+
+  .nav-link {min-width: unset!important; margin: 5px!important;}
+}
 
 .flex-center-center {display: flex; align-items: center; justify-content: center; flex:1}
 .flex-center-end {display: flex; align-items: center; justify-content: flex-end; flex:1}
@@ -42,15 +57,15 @@ main {width: 100%; margin: 0px; overflow-y: scroll; background: rgba(255,255,255
 .hidden-scrollbar::-webkit-scrollbar {display: none; /* Chrome, Safari, and Edge */}
 .empty {min-width: 100px;}
 
-h1 {
-    font-size: clamp(36px, 2vw + 1.2rem, 48px);
-  line-height: clamp(40px, 2vw + 1.3rem, 52px)
-}
+.basic-padding {padding: var(--basic-padding);}
 
-h2 {
-    font-size: clamp(2rem, 1.5vw + 1rem, 2.5rem);
-  line-height: clamp(2.2rem, 1.5vw + 1.2rem, 2.7rem);
-}
+h1 { font-size: clamp(36px, 2vw + 1.2rem, 48px); line-height: 1.25; margin: 0;}
+h2 { font-size: clamp(2rem, 1.5vw + 1rem, 2.5rem); line-height: 1.25; margin: 12.5px 0px; }
+h4 {font-size: 24px; font-weight: 400;}
+
+a {color: inherit; text-decoration: unset; font-weight: 600;}
+a:hover {text-decoration: underline;}
+.no-link-styling {text-decoration: unset!important; color: inherit}
 
 .hover:hover {cursor: pointer; transform: scale(1.05);}
 .hover {cursor: pointer;}
@@ -60,25 +75,46 @@ h2 {
 .no-link-styling {text-decoration: unset!important;}
 .white-text {color: white!important}
 .black-text {color: black!important;}
+.red-text {color: var(--red)}
 .centered-text {text-align: center!important;}
-
+.nowrap {white-space: nowrap;}
 .active-link {text-decoration: underline;}
-
-.nav-list-wrapper {align-items: stretch;}
-.nav-grid-wrapper {border: 2px solid lime; width: 200px; aspect-ratio: 1; padding: 25px; border-radius: 5px; }
-.icon-bg {margin-bottom: 15px; background-position: center; background-size: contain; background-repeat: no-repeat;}
-.nav-list-wrapper .icon-bg {width: 50px; height: 50px;}
-.list-link {background: rgba(255,255,255,0.75); padding: 10px; margin: 0 5px 5px; width: 100px;}
+hr {margin: 25px 0; opacity: 0.25;}
 
 .rich-text-box {min-height: 200px; border: 1px solid #ccc; padding: 10px; width: 45vw;}
 
-button {padding: 10px 20px; margin: 5px; cursor: pointer;}
+button {padding: 10px 20px; margin: 5px; cursor: pointer; text-transform: uppercase; font-weight: 600; background: var(--navy); opacity: 0.8; color: white; border: unset; border-radius: 5px; white-space: nowrap;}
+button:hover {opacity: 1; cursor: pointer; }
+.system-button {background-color: var(--white-1); color: black;}
+.transparent-button {background-color: transparent!important; padding: 10px!important;}
+.icon-button {padding: 0px; background-color: transparent!important; opacity: 0.25;}
+.icon-button:hover {opacity: 1;}
+.tab-button {border-radius: 5px 5px 0 0; background: var(--white-4); margin: 0 2px;}
+.tab-button-active {background: #2e2e2e;}
 
-@media screen and (min-width: 480px) {
-  body {
-    
-  }
-}
+.switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: #4CAF50; }
+input:checked + .slider:before { transform: translateX(26px); }
+
+/* Forms / inputs */
+label {font-weight: 800; text-transform: uppercase; margin-bottom: 5px; font-size: 12px;}
+input {padding: 10px!important; font-size: 12px; border: 1px solid black; border-radius: var(--br); color: black;}
+select {padding: 10px!important; font-size: 12px; border: 1px solid black; background: white; border-radius: var(--br); font-family: var(--greycliff)}
+textarea {padding: 8px; font-size: 12px; border: 1px solid black; border-radius: var(--br); color: black;}
+.input-no-border {border: unset!important;}
+.form-input-wrapper {margin: 10px; }
+.form-input-wrapper input {width: 100%;}
+.checkbox-wrapper {display: flex; align-items: center; background: var(--white-1); padding: 5px;}
+.checkbox-wrapper input {margin-right: 10px;}
+
+table {border-collapse: collapse; width: 100%;}
+tr {border-bottom: 2px solid var(--white-2)}
+th { text-align: left; padding: 10px;  background: white;}
+td { padding: 10px; background: white;}t
+td h3 {font-weight: 400;}
 
 /* QR code generator */
 .qr-container {min-height:100vh; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding:40px 20px; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -101,6 +137,49 @@ button {padding: 10px 20px; margin: 5px; cursor: pointer;}
 .qr-png-button:hover {background-color:#059669; }
 .qr-svg-button {background-color:#8b5cf6; }
 .qr-svg-button:hover {background-color:#7c3aed; }
+
+/* Navigation */
+.nav-grid-wrapper {border: 1px solid teal; background: var(--navy); padding: 10px; margin-right: 10px; border-radius: 5px;}
+.nav-link {white-space: nowrap; background: white; padding: 5px 15px; width: 100%; min-width: 220px; margin: 5px 0; border-radius: 10px; opacity: 0.5; border: 2px solid white;}
+.nav-link:hover {border: 2px solid var(--lavender)}
+.active-link {opacity: 1; border: 2px solid var(--lavender); font-weight: 600;}
+.nav-link p {color: black;}
+.icon-bg {width: 25px; height: 25px; background-size: contain; background-position: center; background-repeat: no-repeat; margin-right: 15px;}
+
+/* Time Tracker Bar */
+#timeTracker {background: var(--opaque-white); border-radius: var(--br); padding: 5px; margin-bottom: 10px;}
+.circle {min-width: 15px; height: 15px; border-radius: 50%; margin: 0 5px;}
+.circle-wrapper {display: flex; align-items: center; gap: 8px; white-space: nowrap;}
+
+.time-tracker-time {font-size: 24px; font-weight: bold; padding: 0 15px; }
+.time-bar-input {border: 2px solid white; background: white; padding: 10px!important; border-radius: unset!important; height: 50px;}
+.time-tracker-wrapper {background: white; border-radius: var(--br); }
+.calculated-time-wrapper {background: white; margin-bottom: 10px; border-radius: var(--br); padding: 10px;}
+
+/* Search and Select Client */
+.select-client-wrapper {border-left: 1px solid var(--white-3); padding-left: 10px}
+.search-select-client-box {position: absolute; top: 100%; left: 5px; right: 0; background: white; max-height: 400px; padding: 15px; overflow-y: auto; z-index: 1000; margin-top: 5px; border: 1px solid black; border-radius: var(--br)}
+.search-select-client-entry {padding: 10px; border-bottom: 1px solid var(--white-3); cursor: pointer; white-space: nowrap; }
+
+
+/* Selectable Calendar */
+.selectable-calendar-button {width: 50px; padding: 10px;  margin: unset; border-left: 1px solid var(--white-3) }
+.calendar-box {position: absolute; top: 100%; left: 5px; background: white; border: 1px solid black; border-radius: 0 0 var(--br) var(--br); padding: 15px;  z-index: 1000; margin-top: -5px; box-shadow: var(--box-shadow); width: 250px;}
+
+/* Clients */
+.client-tag-wrapper {display: flex; align-items: center; justify-content: flex-start; background-color: var(--white-2); border-radius: var(--br); font-size: 14px; padding: 5px;}
+.card {border-radius: var(--br); padding: 10px; border: 1px solid #e0e0e0; background: #f9f9f9; }
+
+/* CreateClient.tsx */
+.add-client-image-preview-wrapper {aspect-ratio: 1; width: 220px; border: 1px solid black; background-size: 90% auto; background-position: center; background-repeat: no-repeat;}
+.browse-image-input {background: var(--opaque-white)}
+.image-preview {width: 100%; height: auto; object-fit: contain; text-align: center;}
+.create-client-entry {background: var(--white-2); padding: 0 10px; border-radius: var(--br)}
+.create-client-entry-name {padding-left: 15px; width: 80%; margin: 0;}
+
+/* page */
+.contact-link {padding: 10px 0;}
+.project-section {background: rgba(0,0,0,0.1); border-radius: var(--br); margin-bottom: 15px;}
 
 
 .fade-in{-webkit-animation:fade-in 1.2s cubic-bezier(.39,.575,.565,1.000) both;animation:fade-in 1.2s cubic-bezier(.39,.575,.565,1.000) both}

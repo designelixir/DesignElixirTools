@@ -63,8 +63,13 @@ export default function CSSFormatter() {
       <button onClick={clearAll} style={{ padding: "10px 15px", cursor: "pointer" }}>
         Clear
       </button>
-
+      
+      <div className="flex-center-spacebetween">
       <h3>Result:</h3>
+      <button id="copyBtn" onClick={copyOutput} style={{ marginLeft: "10px", padding: "8px 12px", fontSize: "14px", cursor: "pointer" }}>
+          Copy
+        </button>
+      </div>
       <div style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
         <pre
           style={{
@@ -78,9 +83,7 @@ export default function CSSFormatter() {
         >
           {output}
         </pre>
-        <button id="copyBtn" onClick={copyOutput} style={{ marginLeft: "10px", padding: "8px 12px", fontSize: "14px", cursor: "pointer" }}>
-          Copy
-        </button>
+        
       </div>
     </div>
   );

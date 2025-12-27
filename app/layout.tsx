@@ -1,8 +1,9 @@
-
 import type { Metadata } from "next";
 import "./globals.css";
-import Navigation from "./components/Navigation"; // adjust path if needed
+import Navigation from "./components/Navigation";
 import { TrackingProvider } from "./context/TrackingContext";
+import { TimeTrackerProvider } from "./context/TimeTrackerContext";
+import TimeTrackerBar from "./time-tracking/TimeTrackerBar";
 
 export const metadata: Metadata = {
   title: "Design Elixir Tools",
@@ -16,10 +17,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <head>
+      <link rel="stylesheet" href="https://use.typekit.net/gek3qlq.css"></link>
+      </head>
+      <body className="flex-start-start">
         <TrackingProvider>
-        <Navigation layout="list" /> 
-        <main>{children}</main>      
+          <TimeTrackerProvider>
+            <Navigation /> 
+            <main>
+              <TimeTrackerBar />
+              <section>
+              {children}
+              </section>
+            </main>
+          </TimeTrackerProvider>
         </TrackingProvider>
       </body>
     </html>

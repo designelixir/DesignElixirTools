@@ -1,21 +1,17 @@
-'use client'; // if using app directory
+'use client';
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Client } from '@/types/globalTypes';
+import { Client, Project } from '@/types/globalTypes';
 import ClientList from './ClientList';
 import CreateClient from './CreateClient';
-import EditClient from './EditClient';
-import DeleteClient from './DeleteClient';
-import ClientSummary from './ClientSummary';
-
-type ModalMode = 'create' | 'summary' | 'edit' | 'delete' | null;
+import { fetchProjects } from '@/utils/clientUtils';
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeClientsCount, setActiveClientsCount] = useState(0);
 
   const fetchClients = async () => {
     try {
@@ -31,6 +27,7 @@ export default function ClientsPage() {
       }
 
       setClients(data || []);
+      await calculateActiveClients(data || []);
     } catch (err) {
       console.error('Error fetching clients:', err);
     } finally {
@@ -38,33 +35,37 @@ export default function ClientsPage() {
     }
   };
 
+  const calculateActiveClients = async (clientsList: Client[]) => {
+    try {
+      const allProjects = await fetchProjects();
+      
+      let count = 0;
+      clientsList.forEach(client => {
+        const clientProjectIds = typeof client.client_projects === 'string' 
+          ? JSON.parse(client.client_projects) 
+          : client.client_projects || [];
+        
+        const clientProjects = allProjects.filter(p => clientProjectIds.includes(p.id));
+        const hasActiveProjects = clientProjects.some(p => p.active !== false);
+        
+        if (hasActiveProjects) {
+          count++;
+        }
+      });
+      
+      setActiveClientsCount(count);
+    } catch (err) {
+      console.error('Error calculating active clients:', err);
+    }
+  };
+
   useEffect(() => {
     fetchClients();
   }, []);
 
-  const handleClientClick = (client: Client) => {
-    setSelectedClient(client);
-    setModalMode('summary');
-  };
-
-  const handleCloseModal = () => {
-    setModalMode(null);
-    setSelectedClient(null);
-  };
-
   const handleClientCreated = () => {
     fetchClients();
-    handleCloseModal();
-  };
-
-  const handleClientUpdated = () => {
-    fetchClients();
-    handleCloseModal();
-  };
-
-  const handleClientDeleted = () => {
-    fetchClients();
-    handleCloseModal();
+    setShowCreateModal(false);
   };
 
   if (loading) {
@@ -72,15 +73,23 @@ export default function ClientsPage() {
   }
 
   return (
-    <div>
-      <div>
-        <h1>Clients</h1>
-        <button onClick={() => setModalMode('create')}>+ Add Client</button>
+    <div className='flex-start-start flex-column basic-padding'>
+      <div className='flex-center-spacebetween full-width'>
+        <div>
+          <h1>Clients</h1>
+          <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
+            {activeClientsCount} / {clients.length} clients with active projects
+          </p>
+        </div>
+        <button onClick={() => setShowCreateModal(true)}>+ Add Client</button>
       </div>
 
-      <ClientList clients={clients} onClientClick={handleClientClick} />
+      <ClientList 
+        clients={clients} 
+        refreshClients={fetchClients}
+      />
 
-      {modalMode && (
+      {showCreateModal && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -97,39 +106,15 @@ export default function ClientsPage() {
             backgroundColor: 'white',
             padding: '20px',
             borderRadius: '8px',
-            maxWidth: '600px',
+            maxWidth: '800px',
             width: '100%',
             maxHeight: '90vh',
             overflow: 'auto'
           }}>
-            {modalMode === 'create' && (
-              <CreateClient
-                onClientCreated={handleClientCreated}
-                onClose={handleCloseModal}
-              />
-            )}
-            {modalMode === 'summary' && selectedClient && (
-              <ClientSummary
-                client={selectedClient}
-                onEdit={() => setModalMode('edit')}
-                onDelete={() => setModalMode('delete')}
-                onClose={handleCloseModal}
-              />
-            )}
-            {modalMode === 'edit' && selectedClient && (
-              <EditClient
-                client={selectedClient}
-                onClientUpdated={handleClientUpdated}
-                onClose={handleCloseModal}
-              />
-            )}
-            {modalMode === 'delete' && selectedClient && (
-              <DeleteClient
-                client={selectedClient}
-                onClientDeleted={handleClientDeleted}
-                onClose={handleCloseModal}
-              />
-            )}
+            <CreateClient
+              onClientCreated={handleClientCreated}
+              onClose={() => setShowCreateModal(false)}
+            />
           </div>
         </div>
       )}

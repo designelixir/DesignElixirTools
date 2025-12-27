@@ -1,10 +1,12 @@
 // components/SelectableCalendar.tsx
+'use client'
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 
 interface SelectableCalendarProps {
   value: Date | null;
   onChange: (date: Date) => void;
-  label: string;
+  label: string | null;
   disabled?: boolean;
 }
 
@@ -12,6 +14,7 @@ export default function SelectableCalendar({ value, onChange, label, disabled = 
   const [isOpen, setIsOpen] = useState(false);
   const [tempDate, setTempDate] = useState<string>('');
   const [tempTime, setTempTime] = useState<string>('');
+  const [error, setError] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,6 +30,7 @@ export default function SelectableCalendar({ value, onChange, label, disabled = 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setError('');
       }
     };
 
@@ -44,97 +48,44 @@ export default function SelectableCalendar({ value, onChange, label, disabled = 
   const handleApply = () => {
     if (tempDate && tempTime) {
       const newDate = new Date(`${tempDate}T${tempTime}`);
+      const now = new Date();
+      
+      // Check if date is in the future
+      if (newDate > now) {
+        setError('Start time cannot be in the future');
+        return;
+      }
+
       onChange(newDate);
       setIsOpen(false);
+      setError('');
     }
   };
 
   return (
     <div ref={dropdownRef} style={{ position: 'relative' }}>
-      <div style={{ marginBottom: '5px', fontSize: '12px', fontWeight: 'bold', color: '#666' }}>
-        {label}
-      </div>
-      <button
-        type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        disabled={disabled}
-        style={{
-          padding: '8px 12px',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          backgroundColor: disabled ? '#f5f5f5' : 'white',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          fontSize: '14px',
-          minWidth: '150px',
-          textAlign: 'left'
-        }}
-      >
-        {formatDisplay(value)}
+      <button type="button" onClick={() => !disabled && setIsOpen(!isOpen)} disabled={disabled} className="selectable-calendar-button time-bar-input" >
+        <Image src="/calendar.png" alt="calendar icon" width={25} height={25} style={{marginTop: '2px'}}/>
       </button>
 
       {isOpen && !disabled && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          backgroundColor: 'white',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          padding: '15px',
-          marginTop: '5px',
-          zIndex: 1000,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          minWidth: '250px'
-        }}>
-          <div style={{ marginBottom: '10px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px' }}>Date:</label>
-            <input
-              type="date"
-              value={tempDate}
-              onChange={(e) => setTempDate(e.target.value)}
-              style={{ width: '100%', padding: '6px', fontSize: '14px' }}
-            />
+        <div className="calendar-box">
+          <div className="flex-start-start flex-column" style={{marginBottom: '10px'}}>
+            <label>Date:</label>
+            <input className="full-width" type="date" value={tempDate} onChange={(e) => setTempDate(e.target.value)} />
           </div>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px' }}>Time:</label>
-            <input
-              type="time"
-              value={tempTime}
-              onChange={(e) => setTempTime(e.target.value)}
-              style={{ width: '100%', padding: '6px', fontSize: '14px' }}
-            />
+          <div className="flex-start-start flex-column" style={{ marginBottom: '15px' }}>
+            <label>Time:</label>
+            <input className="full-width" type="time" value={tempTime} onChange={(e) => setTempTime(e.target.value)} />
           </div>
+          {error && (
+            <div style={{ color: 'red', marginBottom: '10px', fontSize: '14px' }}>
+              {error}
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={handleApply}
-              style={{
-                flex: 1,
-                padding: '8px',
-                backgroundColor: '#2196F3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              Apply
-            </button>
-            <button
-              onClick={() => setIsOpen(false)}
-              style={{
-                flex: 1,
-                padding: '8px',
-                backgroundColor: '#757575',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              Cancel
-            </button>
+            <button onClick={handleApply} > Apply </button>
+            <button className="system-button" onClick={() => { setIsOpen(false); setError(''); }} > Cancel </button>
           </div>
         </div>
       )}

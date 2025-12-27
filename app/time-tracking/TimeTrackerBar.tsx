@@ -1,60 +1,108 @@
-import { useState, useEffect } from 'react';
+'use client'
 import { createClient } from '@/utils/supabase/client';
-import { Client } from '@/types/globalTypes';
 import SearchAndSelectClient from '../components/SearchAndSelectClient';
 import SelectableCalendar from '../components/SelectableCalendar';
-import { useTracking } from '../context/TrackingContext';
-
-interface ActiveSession {
-  originalStartTime: string;
-  selectedClient: Client | null;
-  description: string;
-  currentEntryId: string;
-  storageMode: 'online' | 'local';
-}
+import { useTracking } from '@/app/context/TrackingContext';
+import { useTimeTracker } from '@/app/context/TimeTrackerContext';
+import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { SelectedClientData } from '@/types/globalTypes';
 
 interface TimeTrackerBarProps {
-  onEntrySaved: () => void;
+  onEntrySaved?: () => void;
 }
 
 export default function TimeTrackerBar({ onEntrySaved }: TimeTrackerBarProps) {
-      const { checkTrackingStatus } = useTracking();
+  const { checkTrackingStatus } = useTracking();
+  const {
+    originalStartTime,
+    setOriginalStartTime,
+    elapsedSeconds,
+    setElapsedSeconds,
+    description,
+    setDescription,
+    currentEntryId,
+    setCurrentEntryId,
+    storageMode,
+    setStorageMode,
+    isLoading,
+    error,
+    setError,
+    clearSessionState,
+  } = useTimeTracker();
 
-  const [originalStartTime, setOriginalStartTime] = useState<Date | null>(null);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [description, setDescription] = useState('');
-  const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
-  const [storageMode, setStorageMode] = useState<'online' | 'local'>('online');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [billable, setBillable] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<SelectedClientData | null>(null);
+  const [projectData, setProjectData] = useState<any>(null);
+  const [clientData, setClientData] = useState<any>(null);
 
-  // Load active session on mount
+  const isRecording = !!originalStartTime;
+
   useEffect(() => {
-    loadActiveSession();
-  }, []);
-
-  // Save session state whenever it changes
-  useEffect(() => {
-    if (originalStartTime && currentEntryId) {
-      saveSessionState();
+    if (selectedClient && selectedClient.project_id) {
+      fetchProjectAndClientData();
     }
-  }, [originalStartTime, selectedClient, description, currentEntryId, storageMode]);
+  }, [selectedClient]);
 
+  const fetchProjectAndClientData = async () => {
+    if (!selectedClient) return;
 
+    try {
+      const supabase = createClient();
+      
+      const { data: client } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', selectedClient.client_id)
+        .single();
 
-  // Timer interval
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (originalStartTime) {
-      interval = setInterval(() => {
-        const now = new Date();
-        const diff = Math.floor((now.getTime() - originalStartTime.getTime()) / 1000);
-        setElapsedSeconds(diff);
-      }, 1000);
+      setClientData(client);
+
+      if (selectedClient.project_id) {
+        const { data: project } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', selectedClient.project_id)
+          .single();
+
+        setProjectData(project);
+      }
+    } catch (err) {
+      console.error('Error fetching project/client data:', err);
     }
-    return () => clearInterval(interval);
-  }, [originalStartTime]);
+  };
+
+  const updateProjectLastActive = async (projectId: string, date: Date) => {
+    try {
+      const supabase = createClient();
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({ last_active: date.toISOString() })
+        .eq('id', projectId);
+
+      if (updateError) {
+        console.error('Error updating project last_active:', updateError);
+      }
+    } catch (err) {
+      console.error('Error updating project last_active:', err);
+    }
+  };
+
+  const updateClientLastActive = async (clientId: string, date: Date) => {
+    try {
+      const supabase = createClient();
+      const { error: updateError } = await supabase
+        .from('clients')
+        .update({ last_active: date.toISOString() })
+        .eq('id', clientId);
+
+      if (updateError) {
+        console.error('Error updating client last_active:', updateError);
+      }
+    } catch (err) {
+      console.error('Error updating client last_active:', err);
+    }
+  };
 
   const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -63,203 +111,187 @@ export default function TimeTrackerBar({ onEntrySaved }: TimeTrackerBarProps) {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const loadActiveSession = async () => {
-    try {
-      const supabase = createClient();
-      const { data, error: fetchError } = await supabase
-        .from('time-tracking')
-        .select('*')
-        .eq('tracking_finished', false)
-        .order('start_time', { ascending: false })
-        .limit(1)
-        .single();
+  const buildProjectObject = () => {
+    if (!selectedClient) return null;
 
-      if (data && !fetchError) {
-        const start = new Date(data.start_time);
-        setOriginalStartTime(start);
-        setCurrentEntryId(data.id);
-        setDescription(data.description || '');
-        setStorageMode('online');
-        
-        const now = new Date();
-        const diff = Math.floor((now.getTime() - start.getTime()) / 1000);
-        setElapsedSeconds(diff);
-        
-        if (data.client_id) {
-          const { data: clientData } = await supabase
-            .from('clients')
-            .select('*')
-            .eq('id', data.client_id)
-            .single();
-          
-          if (clientData) {
-            setSelectedClient(clientData);
-          }
-        }
-        
-        setIsLoading(false);
-        return;
-      }
-
-      const sessionData = localStorage.getItem('active_time_session');
-      if (sessionData) {
-        const session: ActiveSession = JSON.parse(sessionData);
-        const originalStart = new Date(session.originalStartTime);
-        setOriginalStartTime(originalStart);
-        
-        setSelectedClient(session.selectedClient);
-        setDescription(session.description);
-        setCurrentEntryId(session.currentEntryId);
-        setStorageMode(session.storageMode);
-        
-        const now = new Date();
-        const diff = Math.floor((now.getTime() - originalStart.getTime()) / 1000);
-        setElapsedSeconds(diff);
-      }
-    } catch (err) {
-      console.error('Error loading active session:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const saveSessionState = () => {
-    if (!originalStartTime || !currentEntryId) return;
-
-    const session: ActiveSession = {
-      originalStartTime: originalStartTime.toISOString(),
-      selectedClient,
-      description,
-      currentEntryId,
-      storageMode
+    return {
+      client_id: selectedClient.client_id,
+      client_first: selectedClient.client_first,
+      client_last: selectedClient.client_last,
+      project_id: selectedClient.project_id,
+      project_name: selectedClient.project_name,
+      project_color: selectedClient.project_color,
+      ...(projectData && {
+        project_image: projectData.project_image,
+        hourly_rate: projectData.hourly_rate,
+        deadline: projectData.deadline,
+        active: projectData.active
+      })
     };
-
-    localStorage.setItem('active_time_session', JSON.stringify(session));
   };
 
-  const clearSessionState = () => {
-    localStorage.removeItem('active_time_session');
-  };
-
-  const handleStart = async () => {
-    if (originalStartTime || currentEntryId) {
-      setError('Please finish or cancel the current session first');
-      return;
-    }
-
-    const now = new Date();
-    setOriginalStartTime(now);
-    setElapsedSeconds(0);
-    setError('');
-
-    try {
-      const supabase = createClient();
-      
-      const { data: existingEntry } = await supabase
-        .from('time-tracking')
-        .select('id')
-        .eq('tracking_finished', false)
-        .limit(1)
-        .single();
-
-      if (existingEntry) {
-        setError('You have an unfinished entry. Please complete it first.');
-        setOriginalStartTime(null);
+  const handleStartOrSave = async () => {
+    if (isRecording) {
+      // Save the entry
+      if (!selectedClient) {
+        setError('Please select a client');
         return;
       }
 
-      const { data, error: insertError } = await supabase
-        .from('time-tracking')
-        .insert([{
-          start_time: now.toISOString(),
-          tracking_finished: false,
-          description: '',
-          client_company: '',
-          client_project: ''
-        }])
-        .select()
-        .single();
+      if (!description || description.trim() === '') {
+        setError('Please add a description');
+        return;
+      }
 
-      if (insertError) throw insertError;
+      const endTime = new Date();
+      const timeLapsed = Math.floor((endTime.getTime() - originalStartTime.getTime()) / 1000);
 
-      setCurrentEntryId(data.id);
-      setStorageMode('online');
-    } catch (err) {
-      console.error('Error creating entry:', err);
-      setStorageMode('local');
-      const localId = `local-${Date.now()}`;
-      setCurrentEntryId(localId);
-      localStorage.setItem(localId, JSON.stringify({
-        start_time: now.toISOString(),
-        tracking_finished: false
-      }));
-    }
-  };
+      try {
+        if (storageMode === 'online') {
+          const supabase = createClient();
+          const { error: updateError } = await supabase
+            .from('time-tracking')
+            .update({
+              start_time: originalStartTime.toISOString(),
+              end_time: endTime.toISOString(),
+              time_lapsed: timeLapsed,
+              client_id: selectedClient.client_id,
+              project_id: selectedClient.project_id || null,
+              project: buildProjectObject(),
+              description: description,
+              tracking_finished: true,
+              billable: billable
+            })
+            .eq('id', currentEntryId);
 
-  const handleSave = async () => {
-    if (!originalStartTime || !currentEntryId) {
-      setError('No active tracking session');
-      return;
-    }
+          if (updateError) throw updateError;
 
-    if (!selectedClient) {
-      setError('Please select a client');
-      return;
-    }
+          // Update project's last_active date
+          if (selectedClient.project_id) {
+            await updateProjectLastActive(selectedClient.project_id, originalStartTime);
+          }
 
-    const endTime = new Date();
-    const timeLapsed = Math.floor((endTime.getTime() - originalStartTime.getTime()) / 1000);
-
-    try {
-      if (storageMode === 'online') {
-        const supabase = createClient();
-        const { error: updateError } = await supabase
-          .from('time-tracking')
-          .update({
+          // Update client's last_active date
+          await updateClientLastActive(selectedClient.client_id, originalStartTime);
+          
+          clearSessionState();
+          setOriginalStartTime(null);
+          setElapsedSeconds(0);
+          setSelectedClient(null);
+          setDescription('');
+          setCurrentEntryId(null);
+          setError('');
+          setBillable(true);
+          setProjectData(null);
+          setClientData(null);
+          
+          await checkTrackingStatus();
+          onEntrySaved?.();
+        } else {
+          if (!currentEntryId) {
+            setError('No entry ID found');
+            return;
+          }
+          
+          const localData = {
+            id: currentEntryId,
             start_time: originalStartTime.toISOString(),
             end_time: endTime.toISOString(),
             time_lapsed: timeLapsed,
-            client_id: selectedClient.id,
-            client_company: selectedClient.client_company || '',
+            client_id: selectedClient.client_id,
+            project_id: selectedClient.project_id || null,
+            project: buildProjectObject(),
             description: description,
-            tracking_finished: true
-          })
-          .eq('id', currentEntryId);
+            tracking_finished: true,
+            stored_locally: true,
+            billable: billable
+          };
+          localStorage.setItem(currentEntryId, JSON.stringify(localData));
+          
+          // Update project's last_active date (for local storage too)
+          if (selectedClient.project_id) {
+            await updateProjectLastActive(selectedClient.project_id, originalStartTime);
+          }
 
-        if (updateError) throw updateError;
-      } else {
-        const localData = {
-          id: currentEntryId,
-          start_time: originalStartTime.toISOString(),
-          end_time: endTime.toISOString(),
-          time_lapsed: timeLapsed,
-          client_id: selectedClient.id,
-          client_company: selectedClient.client_company || '',
-          description: description,
-          tracking_finished: true,
-          stored_locally: true
-        };
-        localStorage.setItem(currentEntryId, JSON.stringify(localData));
+          // Update client's last_active date (for local storage too)
+          await updateClientLastActive(selectedClient.client_id, originalStartTime);
+          
+          clearSessionState();
+          setOriginalStartTime(null);
+          setElapsedSeconds(0);
+          setSelectedClient(null);
+          setDescription('');
+          setCurrentEntryId(null);
+          setError('');
+          setBillable(false);
+          setProjectData(null);
+          setClientData(null);
+          
+          onEntrySaved?.();
+        }
+      } catch (err: any) {
+        console.error('Error saving entry:', err);
+        setError(err.message || 'Failed to save entry');
       }
-
-      clearSessionState();
-      
-      setOriginalStartTime(null);
+    } else {
+      // Start the timer
+      const now = new Date();
+      setOriginalStartTime(now);
       setElapsedSeconds(0);
-      setSelectedClient(null);
-      setDescription('');
-      setCurrentEntryId(null);
       setError('');
-      
-      await checkTrackingStatus(); // Add this line - updates global tracking state and favicon
-      onEntrySaved();
-    } catch (err: any) {
-      console.error('Error saving entry:', err);
-      setError(err.message || 'Failed to save entry');
+
+      try {
+        const supabase = createClient();
+        
+        const { data: existingEntry } = await supabase
+          .from('time-tracking')
+          .select('id')
+          .eq('tracking_finished', false)
+          .limit(1)
+          .single();
+
+        if (existingEntry) {
+          setError('You have an unfinished entry. Please complete it first.');
+          setOriginalStartTime(null);
+          return;
+        }
+
+        const { data, error: insertError } = await supabase
+          .from('time-tracking')
+          .insert([{
+            start_time: now.toISOString(),
+            tracking_finished: false,
+            description: description,
+            client_id: selectedClient?.client_id || null,
+            project_id: selectedClient?.project_id || null,
+            project: selectedClient ? buildProjectObject() : null,
+            billable: billable
+          }])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        setCurrentEntryId(data.id);
+        setStorageMode('online');
+        await checkTrackingStatus();
+      } catch (err) {
+        console.error('Error creating entry:', err);
+        setStorageMode('local');
+        const localId = `local-${Date.now()}`;
+        setCurrentEntryId(localId);
+        localStorage.setItem(localId, JSON.stringify({
+          start_time: now.toISOString(),
+          tracking_finished: false,
+          billable: billable
+        }));
+      }
     }
   };
 
-  const handleCancel = async () => {
+  const handleDelete = async () => {
+    if (!currentEntryId) return;
+
     if (currentEntryId && storageMode === 'online') {
       try {
         const supabase = createClient();
@@ -282,16 +314,52 @@ export default function TimeTrackerBar({ onEntrySaved }: TimeTrackerBarProps) {
     setDescription('');
     setCurrentEntryId(null);
     setError('');
+    setBillable(false);
+    setProjectData(null);
+    setClientData(null);
     await checkTrackingStatus();
   };
 
-  const handleStartTimeChange = (newDate: Date) => {
+  const handleStartTimeChange = async (newDate: Date) => {
+    const oldStartTime = originalStartTime;
     setOriginalStartTime(newDate);
+    
     if (newDate) {
       const now = new Date();
       const diff = Math.floor((now.getTime() - newDate.getTime()) / 1000);
       setElapsedSeconds(diff > 0 ? diff : 0);
     }
+
+    if (currentEntryId && storageMode === 'online') {
+      try {
+        const supabase = createClient();
+        const { error: updateError } = await supabase
+          .from('time-tracking')
+          .update({
+            start_time: newDate.toISOString()
+          })
+          .eq('id', currentEntryId);
+
+        if (updateError) {
+          console.error('Error updating start time:', updateError);
+          setOriginalStartTime(oldStartTime);
+        }
+      } catch (err) {
+        console.error('Error updating start time:', err);
+        setOriginalStartTime(oldStartTime);
+      }
+    } else if (currentEntryId && storageMode === 'local') {
+      const localData = localStorage.getItem(currentEntryId);
+      if (localData) {
+        const parsed = JSON.parse(localData);
+        parsed.start_time = newDate.toISOString();
+        localStorage.setItem(currentEntryId, JSON.stringify(parsed));
+      }
+    }
+  };
+
+  const toggleBillable = () => {
+    setBillable(billable);
   };
 
   if (isLoading) {
@@ -299,98 +367,33 @@ export default function TimeTrackerBar({ onEntrySaved }: TimeTrackerBarProps) {
   }
 
   return (
-    <div style={{ 
-      padding: '20px', 
-      border: '1px solid #ccc', 
-      borderRadius: '8px',
-      marginBottom: '20px'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px', flexWrap: 'wrap' }}>
-        <div
-          style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            backgroundColor: storageMode === 'online' ? '#4CAF50' : '#FFD700'
-          }}
-          title={storageMode === 'online' ? 'Stored online' : 'Stored locally'}
-        />
-        
-        {originalStartTime && (
-          <SelectableCalendar
-            value={originalStartTime}
-            onChange={handleStartTimeChange}
-            label="Start Time"
-          />
-        )}
-        
-        <div style={{ fontSize: '32px', fontWeight: 'bold', padding: '0 10px' }}>
-          {formatTime(elapsedSeconds)}
+    <div id="timeTracker">
+      <div className="time-tracker-wrapper flex-center-spacebetween flex-wrap" style={{border: error ? '2px solid red' : '2px solid #E7E8E8'}}>
+        <div className="flex-center-start full-width">
+          <input className='time-bar-input' value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What are you working on?" style={{width: '40%'}}/>
+          <SearchAndSelectClient selectedClient={selectedClient} onClientSelect={setSelectedClient} />
+          <SelectableCalendar value={originalStartTime} onChange={handleStartTimeChange} label="Start Time" disabled={!isRecording} />
+          <button onClick={toggleBillable} className="time-bar-input system-button" style={{ opacity: billable ? '1' : '0.25', fontSize: '32px', lineHeight: '0', marginTop: '2px', color: billable ? 'green' : 'black' }} > $ </button>
+          <div className="circle" style={{ backgroundColor: storageMode === 'online' ? '#4CAF50' : '#FFD700' }} title={storageMode === 'online' ? 'Stored online' : 'Stored locally'} />
         </div>
-        
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
-          {!originalStartTime && (
-            <button onClick={handleStart} style={{padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold'}}>Start Timer</button>
+        <div className="flex-center-end">
+          <div className="time-tracker-time"> {formatTime(elapsedSeconds)}</div>
+          <button onClick={handleStartOrSave} style={{ backgroundColor: isRecording ? '#4CAF50' : '#2196F3', }} >
+            {isRecording ? 'Save Entry' : 'Start Timer'}
+          </button>
+          
+          {isRecording && (
+            <button onClick={handleDelete} className='time-bar-input system-button' title="Delete entry" >
+              <Image src="/trash.svg" alt="trash icon" width={25} height={25} />
+            </button>
           )}
         </div>
       </div>
 
-      {originalStartTime && (
-        <>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Client:
-            </label>
-            <SearchAndSelectClient selectedClient={selectedClient} onClientSelect={setSelectedClient} />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}> Description: </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What are you working on?"
-              rows={3}
-              style={{ width: '100%', padding: '8px', resize: 'vertical' }}
-            />
-          </div>
-
-          {error && (
-            <div style={{ color: 'red', marginBottom: '15px' }}>
-              {error}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={handleSave}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#2196F3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
-            >
-              Save Entry
-            </button>
-            <button
-              onClick={handleCancel}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#757575',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </>
+      {error && (
+        <div style={{ color: 'red', marginBottom: '15px' }}>
+          {error}
+        </div>
       )}
     </div>
   );

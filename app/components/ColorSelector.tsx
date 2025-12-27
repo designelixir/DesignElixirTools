@@ -7,32 +7,48 @@ interface ColorSelectorProps {
 }
 
 const COLOR_PALETTE = [
-  '#3E3641', '#6775F6', '#CDA7F4', '#CCA6F3', '#6774F6',
-  '#3D3540', '#CEA8F5', '#CBA5F2', '#6774F5', '#6674F5',
-  '#6773F5', '#CFA9F6', '#6673F5', '#CAA4F1', '#3D3541',
-  '#6674F6', '#3D353F', '#3D3641', '#2A100F', '#3E3640',
-  '#3D353E', '#CEA8F4', '#CDA7F3', '#000458', '#281010',
-  '#000457', '#CCA6F2', '#3E3540', '#C9A3F0', '#6574F5',
-  '#6773F4', '#3E3541', '#03085D', '#3D353D', '#CFA9F5',
-  '#3E363F', '#02075C', '#937AF7', '#6674F4', '#050A61',
-  '#3C343F', '#6773F6', '#6673F4', '#3C3541', '#3C3540',
-  '#6573F5', '#CCA7F4', '#6774F4', '#CBA6F3', '#040960',
-  '#D0AAF7', '#170C0A', '#110E07', '#04095E', '#CDA8F5',
-  '#CBA5F1', '#CEA8F3', '#060B62', '#6775F7', '#CDA7F2',
-  '#3D353C', '#2B1110', '#C8A2EF', '#3D3640', '#3D3542',
-  '#6873F5', '#3C3542', '#3E353F', '#6574F4', '#3E353E',
-  '#6673F6', '#01065B', '#3C353F', '#03085C', '#000456',
-  '#D0AAF6', '#6874F6', '#3C343E', '#6977F9', '#5147A1',
-  '#3D3442', '#CFA9F4', '#6876F8', '#EFB488', '#170D0B',
-  '#CAA5F2', '#3E353D', '#EC685C', '#050A5F', '#3B333D',
-  '#000357', '#000459', '#CBA5F3', '#6875F7', '#3D3440',
-  '#6976F9', '#3C343D', '#9279F6', '#CEA9F6', '#6874F5'
+  // Reds
+  '#FF0000', '#FF3333', '#FF6666', '#FF9999', '#CC0000', '#990000',
+  '#FF1a1a', '#FF4d4d', '#FF8080', '#FFb3b3', '#CC3333', '#CC6666',
+  
+  // Oranges
+  '#FF6600', '#FF8800', '#FFAA00', '#FF9933', '#FF7722', '#CC5500',
+  '#FF9966', '#FFB366', '#FFCC66', '#FF6633', '#FF8833', '#CC6633',
+  
+  // Yellows
+  '#FFFF00', '#FFFF33', '#FFFF66', '#FFFF99', '#FFCC00', '#FFD700',
+  '#FFEE00', '#FFFF1a', '#FFFF4d', '#FFFF80', '#FFE600', '#FFDD00',
+  
+  // Greens
+  '#00FF00', '#33FF33', '#66FF66', '#99FF99', '#00CC00', '#009900',
+  '#00FF33', '#33FF66', '#66FF99', '#99FFcc', '#22CC22', '#44DD44',
+  '#32CD32', '#00FF7F', '#00FA9A', '#90EE90', '#98FB98', '#3CB371',
+  
+  // Blues
+  '#0000FF', '#3333FF', '#6666FF', '#9999FF', '#0000CC', '#000099',
+  '#1a1aFF', '#4d4dFF', '#8080FF', '#b3b3FF', '#0066FF', '#0099FF',
+  '#00CCFF', '#33CCFF', '#66CCFF', '#1E90FF', '#4169E1', '#6495ED',
+  '#87CEEB', '#00BFFF', '#5F9EA0', '#4682B4', '#6A5ACD', '#7B68EE',
+  
+  // Purples
+  '#9900FF', '#AA00FF', '#BB00FF', '#CC00FF', '#8800CC', '#6600AA',
+  '#AA33FF', '#BB66FF', '#CC99FF', '#9933CC', '#8833BB', '#7722AA',
+  '#9370DB', '#8A2BE2', '#9400D3', '#9932CC', '#BA55D3', '#DA70D6',
+  
+  // Pinks
+  '#FF00FF', '#FF33FF', '#FF66FF', '#FF99FF', '#CC00CC', '#FF1493',
+  '#FF69B4', '#FFB6C1', '#FFC0CB', '#FF1aFF', '#FF4dFF', '#FF80FF',
+  '#C71585', '#DB7093', '#E6007E', '#FF00AA', '#FF33CC', '#FF66DD'
 ];
-
 
 export default function ColorSelector({ selectedColor, onColorChange }: ColorSelectorProps) {
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [customColor, setCustomColor] = useState(selectedColor);
   const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setCustomColor(selectedColor);
+  }, [selectedColor]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -45,13 +61,23 @@ export default function ColorSelector({ selectedColor, onColorChange }: ColorSel
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCustomColor(value);
+    
+    // Validate hex color format
+    if (/^#[0-9A-F]{6}$/i.test(value)) {
+      onColorChange(value);
+    }
+  };
+
   return (
     <div ref={pickerRef} style={{ position: 'relative' }}>
       <div
         onClick={() => setShowColorPicker(!showColorPicker)}
         style={{
-          width: '60px',
-          height: '60px',
+          width: '20px',
+          height: '20px',
           borderRadius: '50%',
           backgroundColor: selectedColor,
           cursor: 'pointer',
@@ -61,7 +87,7 @@ export default function ColorSelector({ selectedColor, onColorChange }: ColorSel
       {showColorPicker && (
         <div style={{
           position: 'absolute',
-          top: '70px',
+          top: '30px',
           left: 0,
           backgroundColor: 'white',
           padding: '15px',
@@ -69,28 +95,49 @@ export default function ColorSelector({ selectedColor, onColorChange }: ColorSel
           border: '1px solid #ddd',
           boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
           zIndex: 1000,
-          display: 'grid',
-          gridTemplateColumns: 'repeat(6, 1fr)',
-          gap: '8px',
-          width: '240px',
+          width: '300px',
         }}>
-          {COLOR_PALETTE.map((color) => (
-            <div
-              key={color}
-              onClick={() => {
-                onColorChange(color);
-                setShowColorPicker(false);
-              }}
+          <div style={{ marginBottom: '10px' }}>
+            <input
+              type="text"
+              value={customColor}
+              onChange={handleCustomColorChange}
+              placeholder="#FF0000"
               style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '50%',
-                backgroundColor: color,
-                cursor: 'pointer',
-                border: selectedColor === color ? '3px solid #333' : '2px solid #ddd',
+                width: '100%',
+                padding: '6px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                textTransform: 'uppercase'
               }}
             />
-          ))}
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(8, 1fr)',
+            gap: '8px',
+            maxHeight: '300px',
+            overflowY: 'auto',
+          }}>
+            {COLOR_PALETTE.map((color) => (
+              <div
+                key={color}
+                onClick={() => {
+                  onColorChange(color);
+                  setShowColorPicker(false);
+                }}
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  backgroundColor: color,
+                  cursor: 'pointer',
+                  border: selectedColor === color ? '3px solid #333' : '2px solid #ddd',
+                }}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>

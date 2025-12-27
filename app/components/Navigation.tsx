@@ -9,35 +9,59 @@ export interface NavItem {
   title: string;
   href: string;
   icon: string;
+  section: string;
 }
 
 const navItems: NavItem[] = [
-  { title: "CSS Formatter", href: "/css-formatter", icon: "/css.png" },
-  { title: "Paragraph Cleaner", href: "/paragraph-cleaner", icon: "/paragraph.svg" },
-  { title: "QR Code Generator", href: "/qr-code-generator", icon: "/qr-code.svg"},
-  { title: "Client List", href: "/client-list", icon: "/qr-code.svg"},
-  { title: "Time Tracker", href: "/time-tracking", icon: "/qr-code.svg"}
+  { title: "Dashboard", href: "/", icon: "/DE-Lil-Guy.svg", section: 'Design Elixir' },
+  { title: "CSS Formatter", href: "/css-formatter", icon: "/css.png", section: 'Tools' },
+  { title: "Paragraph Cleaner", href: "/paragraph-cleaner", icon: "/paragraph.svg", section: 'Tools' },
+  { title: "QR Code Generator", href: "/qr-code-generator", icon: "/qr-code.svg", section: 'Tools'},
+  { title: "Client List", href: "/client-list", icon: "/rating.png", section: "Design Elixir"},
+  { title: "Time Tracker", href: "/time-tracking", icon: "/clock.png", section: "Design Elixir"},
+  {title: "Project List", href: "/projects", icon: "/pencil-case.png", section: "Design Elixir"},
+  {title: "Invoices", href: '/invoices', icon: "/coin.png", section: "Design Elixir"}
 ];
 
-interface NavigationProps {
-  layout?: "grid" | "list"; // Defaults to list
-}
 
-export default function Navigation({ layout = "list" }: NavigationProps) {
+
+export default function Navigation() {
   const pathname = usePathname();
 
+  // Group items by section
+  const groupedItems = navItems.reduce((acc, item) => {
+    if (!acc[item.section]) {
+      acc[item.section] = [];
+    }
+    acc[item.section].push(item);
+    return acc;
+  }, {} as Record<string, NavItem[]>);
+
+  // Define the order of sections
+  const sectionOrder = ["Design Elixir", "Tools"];
+
   return (
-    <nav className={layout === "list" ? "nav-list-wrapper flex-center-start" : "nav-grid-wrapper flex-center-center"}>
-
-      {navItems.map((item, idx) => {
-        const isActive = pathname === item.href;
+    <nav className="nav-grid-wrapper flex-start-start flex-column">
+      {sectionOrder.map((section) => {
+        const items = groupedItems[section];
+        if (!items) return null;
+        
         return (
-          <div key={idx} className={layout === "list" ? "list-link flex-center-center no-flex-grow" : "grid-link flex-center-center"} >
-
-            <Link href={item.href} className={`no-link-styling flex-center-center flex-column ${isActive ? 'active-link' : ''}`} >
-              <div className="icon-bg" style={{backgroundImage: 'url(' + item.icon + ')'}}></div>
-              <h3 style={{fontSize: '12px'}} className="centered-text no-text-spacing">{item.title}</h3>
-            </Link>
+          <div key={section} className="nav-section">
+            <h3 className="no-text-spacing white-text">{section}</h3>
+            <div className="nav-grid-link-wrapper">
+            {items.map((item, idx) => {
+              const isActive = pathname === item.href;
+              return (
+                <div key={idx} className="grid-link flex-center-center">
+                  <Link href={item.href} className={`nav-link no-link-styling flex-center-start full-width ${isActive ? 'active-link' : ''}`} >
+                    <div className="icon-bg" style={{backgroundImage: 'url(' + item.icon + ')'}}></div>
+                    <p className="centered-text no-text-spacing">{item.title}</p>
+                  </Link>
+                </div>
+              );
+            })}
+            </div>
           </div>
         );
       })}
