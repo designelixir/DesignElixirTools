@@ -7,8 +7,9 @@ import { Project } from '@/types/globalTypes';
 import Link from 'next/link';
 import Image from 'next/image';
 import EditProject from '../EditProject';
-import Tasks from '../Tasks';
+import Tasks from '../TaskList';
 import TimeTrackedList from '@/app/time-tracking/TimeTrackedList';
+import TaskList from '../TaskList';
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -134,7 +135,7 @@ export default function ProjectDetailPage() {
 
       <div style={{ marginBottom: '30px' }}>
         <h2>Tasks</h2>
-        <Tasks clientId={project.client_id} projectId={project.id} />
+        <TaskList projectId={project.id}></TaskList>
       </div>
 
       <hr />

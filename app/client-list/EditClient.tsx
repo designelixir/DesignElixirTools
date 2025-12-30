@@ -12,6 +12,14 @@ interface EditClientProps {
   onClientUpdated: () => void;
 }
 
+interface CreateProjectProps {
+  clientFirst: string;
+  clientLast: string;
+  clientId?: string; // Make it optional again
+  onProjectCreated: (projectId: string) => void;
+  onProjectUpdated?: () => void;
+}
+
 type TabType = 'info' | 'projects';
 
 export default function EditClient({ clientId, onClientUpdated }: EditClientProps) {

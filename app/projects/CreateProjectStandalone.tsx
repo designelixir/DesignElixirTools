@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { Client } from '@/types/globalTypes';
 import ColorSelector from '../components/ColorSelector';
 import { getRandomColor } from '../components/ColorSelector';
+import { clearSpecificCache } from '@/utils/clientUtils';
 
 interface CreateProjectStandaloneProps {
   onProjectCreated: () => void;
@@ -23,6 +24,7 @@ export default function CreateProjectStandalone({ onProjectCreated, onClose }: C
     project_image: null as File | null
   });
   const [loading, setLoading] = useState(false);
+  const [loadingClients, setLoadingClients] = useState(true);
   const [error, setError] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -32,16 +34,25 @@ export default function CreateProjectStandalone({ onProjectCreated, onClose }: C
 
   const fetchClients = async () => {
     try {
+      setLoadingClients(true);
       const supabase = createClient();
       const { data, error } = await supabase
         .from('clients')
         .select('*')
         .order('client_first', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching clients:', error);
+        setError('Failed to load clients');
+        throw error;
+      }
+      
       setClients(data || []);
     } catch (err) {
       console.error('Error fetching clients:', err);
+      setError('Failed to load clients');
+    } finally {
+      setLoadingClients(false);
     }
   };
 
@@ -78,9 +89,15 @@ export default function CreateProjectStandalone({ onProjectCreated, onClose }: C
     try {
       const supabase = createClient();
       
-      // Get client info
-      const selectedClient = clients.find(c => c.id === formData.client_id);
-      if (!selectedClient) {
+      // Fetch the client directly from the database to ensure we have the latest data
+      const { data: selectedClient, error: clientError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', formData.client_id)
+        .single();
+
+      if (clientError || !selectedClient) {
+        console.error('Client fetch error:', clientError);
         setError('Client not found');
         setLoading(false);
         return;
@@ -126,21 +143,7 @@ export default function CreateProjectStandalone({ onProjectCreated, onClose }: C
 
       if (insertError) throw insertError;
 
-      // Update client's project list
-      const clientProjectIds = typeof selectedClient.client_projects === 'string'
-        ? JSON.parse(selectedClient.client_projects)
-        : selectedClient.client_projects || [];
-
-      const { error: updateError } = await supabase
-        .from('clients')
-        .update({
-          client_projects: JSON.stringify([...clientProjectIds, newProject.id])
-        })
-        .eq('id', formData.client_id);
-
-      if (updateError) {
-        console.error('Error updating client projects:', updateError);
-      }
+      clearSpecificCache('projects');
 
       onProjectCreated();
     } catch (err: any) {
@@ -166,14 +169,22 @@ export default function CreateProjectStandalone({ onProjectCreated, onClose }: C
             value={formData.client_id}
             onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
             style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            disabled={loadingClients}
           >
-            <option value="">Select a client</option>
+            <option value="">
+              {loadingClients ? 'Loading clients...' : 'Select a client'}
+            </option>
             {clients.map(client => (
               <option key={client.id} value={client.id}>
                 {client.client_first} {client.client_last}
               </option>
             ))}
           </select>
+          {clients.length === 0 && !loadingClients && (
+            <p style={{ color: '#666', fontSize: '12px', marginTop: '5px' }}>
+              No clients found. Create a client first.
+            </p>
+          )}
         </div>
 
         <div style={{ marginBottom: '15px' }}>
@@ -240,7 +251,7 @@ export default function CreateProjectStandalone({ onProjectCreated, onClose }: C
         {error && <div style={{ color: 'red', marginBottom: '15px' }}>{error}</div>}
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading || loadingClients}>
             {loading ? 'Creating...' : 'Create Project'}
           </button>
           <button type="button" className="system-button" onClick={onClose}>

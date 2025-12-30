@@ -16,7 +16,7 @@ export default function TimeTrackingPage() {
       <h1>Time Tracking</h1>
       
 
-      <AddTimeCSV />
+      {/* <AddTimeCSV /> */}
       <TimeTrackedList defaultView="week" />
     </div>
   );

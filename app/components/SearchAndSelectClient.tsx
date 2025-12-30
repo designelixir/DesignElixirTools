@@ -28,7 +28,7 @@ export default function SearchAndSelectClient({ selectedClient, onClientSelect }
 
   useEffect(() => {
     if (searchTerm.trim() === '') {
-      setFilteredClients(clients);
+      setFilteredClients(sortClientsByActiveProjects(clients));
     } else {
       const term = searchTerm.toLowerCase();
       const filtered = clients.filter(client => {
@@ -42,7 +42,7 @@ export default function SearchAndSelectClient({ selectedClient, onClientSelect }
         
         return nameMatch || projectMatch;
       });
-      setFilteredClients(filtered);
+      setFilteredClients(sortClientsByActiveProjects(filtered));
     }
   }, [searchTerm, clients]);
 
@@ -57,6 +57,29 @@ export default function SearchAndSelectClient({ selectedClient, onClientSelect }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const sortClientsByActiveProjects = (clientsList: ClientWithProjects[]) => {
+    return [...clientsList].sort((a, b) => {
+      const aActiveProjects = (a.projects || []).filter(p => p.active !== false);
+      const bActiveProjects = (b.projects || []).filter(p => p.active !== false);
+      
+      const aHasActive = aActiveProjects.length > 0;
+      const bHasActive = bActiveProjects.length > 0;
+      
+      // Clients with active projects come first
+      if (aHasActive && !bHasActive) return -1;
+      if (!aHasActive && bHasActive) return 1;
+      
+      // If both have active projects, sort by number of active projects (descending)
+      if (aHasActive && bHasActive) {
+        const diff = bActiveProjects.length - aActiveProjects.length;
+        if (diff !== 0) return diff;
+      }
+      
+      // Finally sort alphabetically by first name
+      return a.client_first.localeCompare(b.client_first);
+    });
+  };
 
   const loadClients = async () => {
     try {
@@ -75,8 +98,9 @@ export default function SearchAndSelectClient({ selectedClient, onClientSelect }
         return { ...client, projects: clientProjects };
       });
 
-      setClients(clientsWithProjects);
-      setFilteredClients(clientsWithProjects);
+      const sortedClients = sortClientsByActiveProjects(clientsWithProjects);
+      setClients(sortedClients);
+      setFilteredClients(sortedClients);
     } catch (err) {
       console.error('Error loading clients:', err);
     }
@@ -164,21 +188,7 @@ export default function SearchAndSelectClient({ selectedClient, onClientSelect }
           style={{ paddingRight: selectedClient ? '30px' : undefined }}
         />
         {selectedClient && (
-          <button
-            onClick={handleClear}
-            style={{
-              position: 'absolute',
-              right: '8px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '18px',
-              color: '#666',
-              padding: '0 5px'
-            }}
-          >
-            ✕
-          </button>
+          <button onClick={handleClear} className='transparent-button' > ✕ </button>
         )}
       </div>
 
@@ -194,38 +204,20 @@ export default function SearchAndSelectClient({ selectedClient, onClientSelect }
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
               >
-                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-                  {client.client_first} {client.client_last}
-                </div>
+                <p className='no-text-spacing'><strong>{client.client_first} {client.client_last}</strong></p>
+                  
+                
                 {projects.length > 0 ? (
-                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                  <div className='flex-start-start flex-wrap'>
                     {projects.map((project: Project) => (
-                      <div 
-                        key={project.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '3px',
-                          padding: '2px 6px',
-                          backgroundColor: '#f0f0f0',
-                          borderRadius: '4px',
-                          fontSize: '11px'
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            backgroundColor: project.color || '#CCCCCC'
-                          }}
-                        />
-                        <span>{project.project_name}</span>
+                      <div key={project.id} className='client-tag-wrapper' >
+                        <div className='circle' style={{ backgroundColor: project.color || '#CCCCCC' }} />
+                        <p className='no-text-spacing small-text'>{project.project_name}</p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div style={{ fontSize: '12px', color: '#999' }}>No projects</div>
+                  <p className='no-text-spacing small-text'><i>No projects</i></p>
                 )}
               </div>
             );
@@ -235,9 +227,7 @@ export default function SearchAndSelectClient({ selectedClient, onClientSelect }
 
       {showProjectPicker && selectedClientForProjects && (
         <div className="search-select-client-box">
-          <p style={{margin: '10px 0'}}>
-            Select a project for {selectedClientForProjects.client_first} {selectedClientForProjects.client_last}:
-          </p>
+          <p className='no-text-spacing'><strong> Select a project for {selectedClientForProjects.client_first} {selectedClientForProjects.client_last}: </strong> </p>
           {(selectedClientForProjects.projects || []).map(project => (
             <div
               key={project.id}
@@ -246,18 +236,9 @@ export default function SearchAndSelectClient({ selectedClient, onClientSelect }
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div
-                  style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    backgroundColor: project.color || '#CCCCCC'
-                  }}
-                />
-                <div style={{ fontWeight: 'bold' }}>
-                  {project.project_name}
-                </div>
+              <div className='client-tag-wrapper'>
+                <div className='circle' style={{ backgroundColor: project.color || '#CCCCCC' }} />
+                <p className='no-text-spacing small-text'>{project.project_name}</p>
               </div>
             </div>
           ))}

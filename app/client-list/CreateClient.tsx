@@ -225,6 +225,7 @@ export default function CreateClient({ onClientCreated, onClose }: CreateClientP
             <CreateProject 
               clientFirst={formData.client_first}
               clientLast={formData.client_last}
+              
               onProjectCreated={handleProjectCreated}
             />
 

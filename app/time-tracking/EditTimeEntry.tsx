@@ -89,6 +89,33 @@ export default function EditTimeEntry({ entry, onEntryUpdated }: EditTimeEntryPr
     setIsOpen(false);
   };
 
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this time entry?')) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const supabase = createClient();
+      const { error: deleteError } = await supabase
+        .from('time-tracking')
+        .delete()
+        .eq('id', entry.id);
+
+      if (deleteError) throw deleteError;
+
+      setIsOpen(false);
+      onEntryUpdated();
+    } catch (err: any) {
+      console.error('Error deleting entry:', err);
+      setError(err.message || 'Failed to delete entry');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleStartTimeChange = (newStart: Date) => {
     setStartTime(newStart);
     if (endTime) {
@@ -303,9 +330,21 @@ export default function EditTimeEntry({ entry, onEntryUpdated }: EditTimeEntryPr
 
               {error && <div style={{ color: 'red', marginBottom: '15px' }}>{error}</div>}
 
-              <button type="submit" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Entry'}
-              </button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button type="submit" disabled={loading}>
+                  {loading ? 'Updating...' : 'Update Entry'}
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleDelete} 
+                  disabled={loading}
+                  className='system-button'
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <Image src="/trash.svg" alt="delete icon" width={15} height={15} />
+                  Delete
+                </button>
+              </div>
             </form>
           </div>
         </div>

@@ -181,7 +181,7 @@ export default function TimeTrackerBar({ onEntrySaved }: TimeTrackerBarProps) {
           setDescription('');
           setCurrentEntryId(null);
           setError('');
-          setBillable(true);
+          setBillable(false);
           setProjectData(null);
           setClientData(null);
           
@@ -359,8 +359,8 @@ export default function TimeTrackerBar({ onEntrySaved }: TimeTrackerBarProps) {
   };
 
   const toggleBillable = () => {
-    setBillable(billable);
-  };
+  setBillable(!billable);
+};
 
   if (isLoading) {
     return <div>Loading...</div>;

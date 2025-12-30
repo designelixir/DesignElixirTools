@@ -8,9 +8,10 @@ interface SelectableCalendarProps {
   onChange: (date: Date) => void;
   label: string | null;
   disabled?: boolean;
+  allowFutureDates?: boolean;
 }
 
-export default function SelectableCalendar({ value, onChange, label, disabled = false }: SelectableCalendarProps) {
+export default function SelectableCalendar({ value, onChange, label, disabled = false, allowFutureDates = true }: SelectableCalendarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempDate, setTempDate] = useState<string>('');
   const [tempTime, setTempTime] = useState<string>('');
@@ -46,12 +47,14 @@ export default function SelectableCalendar({ value, onChange, label, disabled = 
   };
 
   const handleApply = () => {
-    if (tempDate && tempTime) {
-      const newDate = new Date(`${tempDate}T${tempTime}`);
+    if (tempDate) {
+      // If no time is selected, default to 23:59:00
+      const timeToUse = tempTime || '23:59';
+      const newDate = new Date(`${tempDate}T${timeToUse}:00`);
       const now = new Date();
       
-      // Check if date is in the future
-      if (newDate > now) {
+      // Check if date is in the future only if allowFutureDates is false
+      if (!allowFutureDates && newDate > now) {
         setError('Start time cannot be in the future');
         return;
       }
@@ -75,8 +78,8 @@ export default function SelectableCalendar({ value, onChange, label, disabled = 
             <input className="full-width" type="date" value={tempDate} onChange={(e) => setTempDate(e.target.value)} />
           </div>
           <div className="flex-start-start flex-column" style={{ marginBottom: '15px' }}>
-            <label>Time:</label>
-            <input className="full-width" type="time" value={tempTime} onChange={(e) => setTempTime(e.target.value)} />
+            <label>Time (optional):</label>
+            <input className="full-width" type="time" value={tempTime} onChange={(e) => setTempTime(e.target.value)} placeholder="Defaults to 23:59" />
           </div>
           {error && (
             <div style={{ color: 'red', marginBottom: '10px', fontSize: '14px' }}>

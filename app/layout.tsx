@@ -3,7 +3,8 @@ import "./globals.css";
 import Navigation from "./components/Navigation";
 import { TrackingProvider } from "./context/TrackingContext";
 import { TimeTrackerProvider } from "./context/TimeTrackerContext";
-import TimeTrackerBar from "./time-tracking/TimeTrackerBar";
+import { TimeEntriesProvider } from "./context/TimeEntriesContext";
+import TimeTrackerWrapper from "./time-tracking/TimeTrackerWrapper";
 
 export const metadata: Metadata = {
   title: "Design Elixir Tools",
@@ -23,13 +24,15 @@ export default function RootLayout({
       <body className="flex-start-start">
         <TrackingProvider>
           <TimeTrackerProvider>
-            <Navigation /> 
-            <main>
-              <TimeTrackerBar />
-              <section>
-              {children}
-              </section>
-            </main>
+            <TimeEntriesProvider>
+              <Navigation /> 
+              <main>
+                <TimeTrackerWrapper />
+                <section>
+                {children}
+                </section>
+              </main>
+            </TimeEntriesProvider>
           </TimeTrackerProvider>
         </TrackingProvider>
       </body>

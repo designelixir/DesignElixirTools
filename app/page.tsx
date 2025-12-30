@@ -1,11 +1,17 @@
 import Navigation from "./components/Navigation";
-import Tasks from "./projects/Tasks";
-
+import Tabs from "./components/Tabs";
+import CompletedTasksList from "./projects/CompletedTasks";
+import Tasks from "./projects/TaskList";
 
 export default function Home() {
   return (
     <div className="flex-center-center full-width basic-padding">
-      <Tasks tableTitle="All Tasks"></Tasks>
+      <Tabs 
+        tabs={[ 
+          { name: "Overview", content: <Tasks tableTitle="All Tasks" /> },
+          { name: "Completed", content: <CompletedTasksList></CompletedTasksList> }
+        ]} 
+      />
     </div>
   );
 }

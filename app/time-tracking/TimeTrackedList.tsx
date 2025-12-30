@@ -7,6 +7,7 @@ import { TimeEntry, Project } from '@/types/globalTypes';
 import EditTimeEntry from './EditTimeEntry';
 import SearchAndSelectClient from '../components/SearchAndSelectClient';
 import InvoiceTimeEntries from '../invoices/InvoiceTimeEntries';
+import { useTimeEntries } from '../context/TimeEntriesContext';
 
 interface TimeTrackedListProps {
   filterProjectIds?: string[];
@@ -43,6 +44,7 @@ export default function TimeTrackedList({
   allowProjectSelection = true,
   showPastInvoicesByDefault = false
 }: TimeTrackedListProps) {
+  const { refreshTrigger } = useTimeEntries();
   const [entries, setEntries] = useState<TimeEntryWithProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<TimeView>(defaultView);
@@ -62,7 +64,7 @@ export default function TimeTrackedList({
 
   useEffect(() => {
     fetchEntries();
-  }, [activeProjectIds, view, showInvoicedAsWell]);
+  }, [activeProjectIds, view, showInvoicedAsWell, refreshTrigger]);
 
   const loadInitialFilter = async () => {
     if (!filterProjectIds || filterProjectIds.length === 0) return;
@@ -297,8 +299,14 @@ export default function TimeTrackedList({
             <button onClick={() => setView('year')} className={view === 'year' ? '' : 'system-button'}> Year </button>
             <button onClick={() => setView('total')} className={view === 'total' ? '' : 'system-button'}> Total </button>
             <label className='checkbox-wrapper'>
-              <input type="checkbox" checked={showInvoicedAsWell} onChange={(e) => setShowInvoicedAsWell(e.target.checked)} />
-              Completed?
+              <input 
+                type="checkbox" 
+                checked={showInvoicedAsWell} 
+                onChange={(e) => setShowInvoicedAsWell(e.target.checked)}
+                role="switch"
+                aria-checked={showInvoicedAsWell}
+              />
+              <span className="switch-label">Show Invoiced?</span>
             </label>
             {allowProjectSelection && (
               <div style={{ marginLeft: '20px' }}>

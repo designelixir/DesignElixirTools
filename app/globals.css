@@ -1,9 +1,9 @@
 * {box-sizing: border-box; font-family: 'Greycliff-CF', sans-serif}
 :root {
   --br: 5px;
-  --red: #E23F24;
-  --orange: #FF9933;
-  --yellow: #FFCC33;
+  --red: #e23f24;
+  --orange: #ff9933;
+  --yellow: #ffcc33;
   --teal: #236666;
   --navy: #333399;
   --blue: #3366CC;
@@ -78,15 +78,16 @@ a:hover {text-decoration: underline;}
 .red-text {color: var(--red)}
 .centered-text {text-align: center!important;}
 .nowrap {white-space: nowrap;}
+.small-text {font-size: 12px;}
 .active-link {text-decoration: underline;}
 hr {margin: 25px 0; opacity: 0.25;}
 
-.rich-text-box {min-height: 200px; border: 1px solid #ccc; padding: 10px; width: 45vw;}
+
 
 button {padding: 10px 20px; margin: 5px; cursor: pointer; text-transform: uppercase; font-weight: 600; background: var(--navy); opacity: 0.8; color: white; border: unset; border-radius: 5px; white-space: nowrap;}
 button:hover {opacity: 1; cursor: pointer; }
 .system-button {background-color: var(--white-1); color: black;}
-.transparent-button {background-color: transparent!important; padding: 10px!important;}
+.transparent-button {background-color: transparent!important; padding: 10px!important; color: black!important;}
 .icon-button {padding: 0px; background-color: transparent!important; opacity: 0.25;}
 .icon-button:hover {opacity: 1;}
 .tab-button {border-radius: 5px 5px 0 0; background: var(--white-4); margin: 0 2px;}
@@ -149,16 +150,17 @@ td h3 {font-weight: 400;}
 /* Time Tracker Bar */
 #timeTracker {background: var(--opaque-white); border-radius: var(--br); padding: 5px; margin-bottom: 10px;}
 .circle {min-width: 15px; height: 15px; border-radius: 50%; margin: 0 5px;}
+.circle-small {min-width: 10px; height: 10px; border-radius: 50%; margin: 0 2.5px;}
 .circle-wrapper {display: flex; align-items: center; gap: 8px; white-space: nowrap;}
 
 .time-tracker-time {font-size: 24px; font-weight: bold; padding: 0 15px; }
-.time-bar-input {border: 2px solid white; background: white; padding: 10px!important; border-radius: unset!important; height: 50px;}
+.time-bar-input {border: 2px solid white; background: white; padding: 10px!important; border-radius: unset!important; height: 50px; white-space: nowrap;}
 .time-tracker-wrapper {background: white; border-radius: var(--br); }
 .calculated-time-wrapper {background: white; margin-bottom: 10px; border-radius: var(--br); padding: 10px;}
 
 /* Search and Select Client */
 .select-client-wrapper {border-left: 1px solid var(--white-3); padding-left: 10px}
-.search-select-client-box {position: absolute; top: 100%; left: 5px; right: 0; background: white; max-height: 400px; padding: 15px; overflow-y: auto; z-index: 1000; margin-top: 5px; border: 1px solid black; border-radius: var(--br)}
+.search-select-client-box {position: absolute; top: 100%; left: 5px; right: 0; background: white; max-height: 400px; padding: 5px; overflow-y: auto; z-index: 1000; margin-top: 5px; border: 1px solid black; border-radius: var(--br); width: 300px;}
 .search-select-client-entry {padding: 10px; border-bottom: 1px solid var(--white-3); cursor: pointer; white-space: nowrap; }
 
 
@@ -167,7 +169,7 @@ td h3 {font-weight: 400;}
 .calendar-box {position: absolute; top: 100%; left: 5px; background: white; border: 1px solid black; border-radius: 0 0 var(--br) var(--br); padding: 15px;  z-index: 1000; margin-top: -5px; box-shadow: var(--box-shadow); width: 250px;}
 
 /* Clients */
-.client-tag-wrapper {display: flex; align-items: center; justify-content: flex-start; background-color: var(--white-2); border-radius: var(--br); font-size: 14px; padding: 5px;}
+.client-tag-wrapper {display: flex; align-items: center; justify-content: flex-start; background-color: var(--white-2); border-radius: var(--br); font-size: 14px; padding: 5px; gap: 5px; max-width: 250px; overflow: clip;}
 .card {border-radius: var(--br); padding: 10px; border: 1px solid #e0e0e0; background: #f9f9f9; }
 
 /* CreateClient.tsx */
@@ -181,6 +183,26 @@ td h3 {font-weight: 400;}
 .contact-link {padding: 10px 0;}
 .project-section {background: rgba(0,0,0,0.1); border-radius: var(--br); margin-bottom: 15px;}
 
+/* Tabs Component */
+.tabs-container { width: 100%; }
+.tabs-header { display: flex; gap: 4px; border-bottom: 2px solid #e0e0e0; margin-bottom: 20px; }
+
+/* Task Card */
+.overdue { background: rgba(226, 63, 36, 0.75)!important}
+.urgent { background: rgba(255, 153, 51, 0.75)!important}
+.coming-up {background: rgba(255, 204, 51, 0.5)}
+.today {border: 2px solid var(--red); background: rgba(255, 153, 51, 0.25)}
+.awaiting-feedback {opacity: 0.25!important;}
+.backburner {opacity: 0.5!important;}
+
+/* Task List */
+.bucket-container {display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;}
+.bucket-wrapper {background: white; border-radius: var(--br); box-shadow: var(--box-shadow); min-width: 400px;}
+.bucket-wrapper-list {display: flex; flex-direction: column; gap: 10px; margin: 15px 0 10px 0;}
+
+/* RichText Component */
+.rich-text-editor {width: 50%; max-width: 50%; min-width: 50%;}
+.rich-text-box {min-height: 200px; border: 1px solid #ccc; padding: 10px; width: 100%;}
 
 .fade-in{-webkit-animation:fade-in 1.2s cubic-bezier(.39,.575,.565,1.000) both;animation:fade-in 1.2s cubic-bezier(.39,.575,.565,1.000) both}
 @-webkit-keyframes fade-in{0%{opacity:0}100%{opacity:1}}@keyframes fade-in{0%{opacity:0}100%{opacity:1}}

@@ -29,6 +29,18 @@ export interface TimeEntry {
   };
 }
 
+export interface Checklist {
+  id: string;
+  created_at: string;
+  project_id: string;
+  task_description: string;
+  task_order: number;
+  task_deadline: string | null;
+  task_status: string;
+  task_completed: boolean;
+  task_bucket: string;
+}
+
 export interface Client {
   id: string;
   client_first: string;

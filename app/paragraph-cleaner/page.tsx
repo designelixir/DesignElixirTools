@@ -89,47 +89,31 @@ const copyToClipboard = () => {
 };
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", padding: "20px" }}>
-      <div className="flex-center-spacebetween">
+    <div className="basic-padding">
+      <div className="flex-start-start flex-column">
         <h2>Rich Text Cleaner</h2>
-        <div className="flex-center-end">
-          <button onClick={clearText}>Clear Text</button>
+        <div className="flex-center-start">
+          <button onClick={cleanHtml}>Clean Rich Text</button>
+          {output && <button onClick={clearText} className="system-button">Clear Text</button>}
         </div>
       </div>
 
       <div className="flex-start-start">
-        <div
-          className="flex-start-start flex-column"
-          style={{ maxWidth: "45vw", marginRight: "2.5vw" }}
-        >
-          <div className="flex-center-spacebetween full-width">
-            <p>
-              <strong>Copy text here</strong>
-            </p>
-            <button onClick={cleanHtml}>Clean Rich Text</button>
-          </div>
-
-          <div className="rich-text-box" ref={editorRef} contentEditable></div>
+        <div className="flex-start-start flex-column rich-text-editor" >
+            <p> Copy text here </p>
+            <div className="rich-text-box flex-start-start" ref={editorRef} contentEditable></div>
         </div>
 
         {output && (
-          <div>
+          <div className="rich-text-editor" style={{marginLeft: '10px'}}>
             <div className="flex-center-spacebetween full-width">
-              <p>
-                <strong>Cleaned Text</strong>
-              </p>
-              <button
-                onClick={copyToClipboard}
-                style={{
-                  backgroundColor: copyStatus ? "green" : "",
-                  color: copyStatus ? "white" : "",
-                }}
-              >
+              <p> <strong>Cleaned Text</strong> </p>
+              <button onClick={copyToClipboard} style={{ backgroundColor: copyStatus ? "green" : "", color: copyStatus ? "white" : "", }} >
                 {copyStatus ? "Text copied to clipboard" : "Copy Cleaned Text"}
               </button>
             </div>
             <div
-              className="rich-text-box"
+              className="rich-text-box flex-start-start"
               dangerouslySetInnerHTML={{ __html: output }}
             />
           </div>
